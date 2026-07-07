@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Capacidad Ágil & DoD Cascadas 5.0</title>
+    <title>Capacidad Ágil & DoD Cascadas</title>
     <!-- Tailwind CSS Play CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- React & ReactDOM (Librerías de Producción de React) -->
@@ -53,7 +53,7 @@
           const list = [];
           const emiliani = (date) => {
             const day = date.getUTCDay();
-            if (day === 1) return date; // Ya es lunes
+            if (day === 1) return date; 
             const diff = day === 0 ? 1 : 8 - day;
             const res = new Date(date);
             res.setUTCDate(res.getUTCDate() + diff);
@@ -239,6 +239,52 @@
         };
 
         const demoSprintsData = {
+          'Sprint 58': {
+            id: 'Sprint 58',
+            start: '2026-07-06',
+            end: '2026-07-22',
+            holidays: ['2026-07-20'],
+            resources: [
+              { id: '1', name: 'Briyith Castaño', role: 'DEV', capacity: 8, exceptionStart: '' },
+              { id: '2', name: 'Luis Oviedo', role: 'DEV', capacity: 8, exceptionStart: '' },
+              { id: '3', name: 'Jordan Reyes', role: 'QA', capacity: 4, exceptionStart: '' }
+            ],
+            userStories: [
+              {
+                id: '5410',
+                name: 'Sincronización Automática SharePoint (Planning-Sprint 58.xlsx)',
+                points: 5,
+                devAssigned: '1',
+                qaAssigned: '3',
+                hasDev: true,
+                hasQa: true,
+                status: 'DoD Compliant (Done)',
+                delayCategory: '',
+                delayReason: '',
+                dodChecked: ['Código aprobado', 'Unitarias > 80%', 'Pruebas QA OK'],
+                devHours: { analisis: 2, diseño: 1, casosPrueba: 2, pUnitarias: 2, desarrollo: 12, documentacion: 2 },
+                qaHours: { planeacion: 1, diseño: 2, ejecucion: 4, cierre: 0.5, entrega: 0.5, regresion: 0 }
+              },
+              {
+                id: '5411',
+                name: 'Reporte Consolidado de Balance de Capacidades',
+                points: 8,
+                devAssigned: '2',
+                qaAssigned: '3',
+                hasDev: true,
+                hasQa: true,
+                status: 'Retrasada / Bloqueada',
+                delayCategory: 'Falta DoD Pruebas',
+                delayReason: 'El despliegue de pruebas falló en el pipeline de Integración Continua.',
+                dodChecked: ['Código aprobado', 'Unitarias > 80%'],
+                devHours: { analisis: 2, diseño: 2, casosPrueba: 2, pUnitarias: 2, desarrollo: 20, documentacion: 4 },
+                qaHours: { planeacion: 2, diseño: 2, ejecucion: 8, cierre: 0.5, entrega: 0.5, regresion: 2 }
+              }
+            ],
+            devQueues: { '1': ['5410'], '2': ['5411'] },
+            qaQueues: { '3': ['5410', '5411'] },
+            dodList: ['Código aprobado', 'Unitarias > 80%', 'Pruebas QA OK', 'Manual Técnico']
+          },
           'Sprint 59': {
             id: 'Sprint 59',
             start: '2026-07-27',
@@ -622,12 +668,11 @@
             try {
               const sheetNamesLower = workbook.SheetNames.map(n => n.toLowerCase());
               
-              // Determinar si es un reporte parcial (DEV o QA) o una base de datos unificada completa
               const isDevOnly = sheetNamesLower.some(n => n.includes('horas_dev') || n === 'dev') && !sheetNamesLower.some(n => n.includes('capacidad') || n.includes('balance'));
               const isQaOnly = sheetNamesLower.some(n => n.includes('horas_qa') || n === 'qa') && !sheetNamesLower.some(n => n.includes('capacidad') || n.includes('balance'));
 
               if (isDevOnly || isQaOnly) {
-                addLog(`Se detectó reporte parcial de ${isDevOnly ? 'Desarrollo (DEV)' : 'Aseguramiento (QA)'}. Iniciando fusión inteligente...`);
+                addLog(`Fusión inteligente detectada: procesando archivo parcial de ${isDevOnly ? 'Desarrollo (DEV)' : 'Aseguramiento (QA)'}...`);
                 let countMerged = 0;
 
                 const sheetName = workbook.SheetNames.find(n => n.toLowerCase().includes('dev') || n.toLowerCase().includes('qa'));
@@ -636,7 +681,14 @@
 
                 setSprints(prev => {
                   const updatedSprints = { ...prev };
-                  if (!updatedSprints[activeSprintId]) return prev;
+                  if (!updatedSprints[activeSprintId]) {
+                    // Si por alguna razón el sprint no está inicializado
+                    updatedSprints[activeSprintId] = {
+                      id: activeSprintId,
+                      start: '2026-07-27', end: '2026-08-12',
+                      holidays: [], resources: [], userStories: [], devQueues: {}, qaQueues: {}, dodList: ['Código aprobado']
+                    };
+                  }
                   
                   const targetSprint = { ...updatedSprints[activeSprintId] };
                   if (!Array.isArray(targetSprint.userStories)) targetSprint.userStories = [];
@@ -645,48 +697,68 @@
                     const id = String(row['ID HU'] || row['ID'] || '').trim();
                     if (!id) return;
 
-                    const story = targetSprint.userStories.find(hu => hu && hu.id === id);
-                    if (story) {
-                      // ASIGNACIÓN RESILIENTE: Busca coincidencia por ID numérico de recurso o nombre
-                      const assignedCell = row['ID DEV Asignado'] || row['ID QA Asignado'] || row['Desarrollador Asignado'] || row['Asegurador Asignado'] || '';
-                      let targetResId = '';
-                      
-                      if (assignedCell) {
-                        const cleanCell = String(assignedCell).trim();
-                        const matchById = (targetSprint.resources || []).find(r => String(r.id) === cleanCell);
-                        if (matchById) {
-                          targetResId = matchById.id;
-                        } else {
-                          const matchByName = (targetSprint.resources || []).find(r => r.name.toLowerCase().includes(cleanCell.toLowerCase()) || cleanCell.toLowerCase().includes(r.name.toLowerCase()));
-                          if (matchByName) targetResId = matchByName.id;
-                        }
-                      }
-
-                      if (isDevOnly) {
-                        story.hasDev = true;
-                        if (targetResId) story.devAssigned = targetResId;
-                        story.devHours = {
-                          analisis: parseFloat(row['Análisis'] || row['Analisis'] || 0) || 0,
-                          diseño: parseFloat(row['Diseño'] || row['Diseno'] || 0) || 0,
-                          casosPrueba: parseFloat(row['Casos Prueba'] || row['Casos de Prueba'] || 0) || 0,
-                          pUnitarias: parseFloat(row['P. Unitarias'] || row['Pruebas Unitarias'] || 0) || 0,
-                          desarrollo: parseFloat(row['Desarrollo'] || 0) || 0,
-                          documentacion: parseFloat(row['Documentación'] || row['Documentacion'] || 0) || 0
-                        };
-                      } else {
-                        story.hasQa = true;
-                        if (targetResId) story.qaAssigned = targetResId;
-                        story.qaHours = {
-                          planeacion: parseFloat(row['Planeación'] || row['Planeacion'] || 0) || 0,
-                          diseño: parseFloat(row['Diseño'] || row['Diseno'] || 0) || 0,
-                          ejecucion: parseFloat(row['Ejecución'] || row['Ejecucion'] || 0) || 0,
-                          cierre: parseFloat(row['Cierre'] || 0) || 0,
-                          entrega: parseFloat(row['Entrega'] || 0) || 0,
-                          regresion: parseFloat(row['Regresion'] || row['Regresión'] || 0) || 0
-                        };
-                      }
-                      countMerged++;
+                    let story = targetSprint.userStories.find(hu => hu && hu.id === id);
+                    
+                    // AUTO-CREACIÓN DE HISTORIA: Si no existe, se inserta una nueva en el tablero
+                    if (!story) {
+                      story = {
+                        id,
+                        name: row['Historia'] || row['Nombres de HU'] || `Historia importada #${id}`,
+                        points: parseInt(row['Puntos'] || 3) || 3,
+                        devAssigned: '',
+                        qaAssigned: '',
+                        hasDev: isDevOnly,
+                        hasQa: isQaOnly,
+                        status: 'Planeada',
+                        delayCategory: '',
+                        delayReason: '',
+                        dodChecked: [],
+                        devHours: { analisis: 0, diseño: 0, casosPrueba: 0, pUnitarias: 0, desarrollo: 0, documentacion: 0 },
+                        qaHours: { planeacion: 0, diseño: 0, ejecucion: 0, cierre: 0, entrega: 0, regresion: 0 }
+                      };
+                      targetSprint.userStories.push(story);
+                      addLog(`Historia de Usuario #${id} creada automáticamente ya que no existía.`);
                     }
+
+                    // Vincular recurso y rellenar horas
+                    const assignedCell = row['ID DEV Asignado'] || row['ID QA Asignado'] || row['Desarrollador Asignado'] || row['Asegurador Asignado'] || '';
+                    let targetResId = '';
+                    
+                    if (assignedCell) {
+                      const cleanCell = String(assignedCell).trim();
+                      const matchById = (targetSprint.resources || []).find(r => String(r.id) === cleanCell);
+                      if (matchById) {
+                        targetResId = matchById.id;
+                      } else {
+                        const matchByName = (targetSprint.resources || []).find(r => r.name.toLowerCase().includes(cleanCell.toLowerCase()) || cleanCell.toLowerCase().includes(r.name.toLowerCase()));
+                        if (matchByName) targetResId = matchByName.id;
+                      }
+                    }
+
+                    if (isDevOnly) {
+                      story.hasDev = true;
+                      if (targetResId) story.devAssigned = targetResId;
+                      story.devHours = {
+                        analisis: parseFloat(row['Análisis'] || row['Analisis'] || 0) || 0,
+                        diseño: parseFloat(row['Diseño'] || row['Diseno'] || 0) || 0,
+                        casosPrueba: parseFloat(row['Casos Prueba'] || row['Casos de Prueba'] || 0) || 0,
+                        pUnitarias: parseFloat(row['P. Unitarias'] || row['Pruebas Unitarias'] || 0) || 0,
+                        desarrollo: parseFloat(row['Desarrollo'] || 0) || 0,
+                        documentacion: parseFloat(row['Documentación'] || row['Documentacion'] || 0) || 0
+                      };
+                    } else {
+                      story.hasQa = true;
+                      if (targetResId) story.qaAssigned = targetResId;
+                      story.qaHours = {
+                        planeacion: parseFloat(row['Planeación'] || row['Planeacion'] || 0) || 0,
+                        diseño: parseFloat(row['Diseño'] || row['Diseno'] || 0) || 0,
+                        ejecucion: parseFloat(row['Ejecución'] || row['Ejecucion'] || 0) || 0,
+                        cierre: parseFloat(row['Cierre'] || 0) || 0,
+                        entrega: parseFloat(row['Entrega'] || 0) || 0,
+                        regresion: parseFloat(row['Regresion'] || row['Regresión'] || 0) || 0
+                      };
+                    }
+                    countMerged++;
                   });
 
                   // Reconstruir colas de prioridad de manera segura
@@ -711,22 +783,25 @@
                   return { ...prev, [activeSprintId]: targetSprint };
                 });
 
-                addLog(`¡Se fusionaron correctamente ${countMerged} HUs del reporte parcial de ${isDevOnly ? 'DEV' : 'QA'}!`);
-                showFeedback(`Fusión completada: ${countMerged} historias actualizadas`, 'success');
+                addLog(`¡Se procesaron correctamente ${countMerged} HUs del archivo parcial de ${isDevOnly ? 'DEV' : 'QA'}!`);
+                showFeedback(`Fusión completada: ${countMerged} historias procesadas`, 'success');
                 return;
               }
 
-              // FLUJO IMPORTACIÓN BASE DE DATOS COMPLETA DE 4 VÍAS
-              let activeId = 'Sprint 59';
-              let huSheetName = workbook.SheetNames.find(n => n.toLowerCase().includes('hus sprint') || n.toLowerCase().includes('hu'));
+              let activeId = activeSprintId;
+              let huSheetName = workbook.SheetNames.find(n => n.toLowerCase().includes('hus sprint') || n.toLowerCase().includes('hu') || n.toLowerCase().includes('sprint'));
               let capSheetName = workbook.SheetNames.find(n => n.toLowerCase().includes('capacidad') || n.toLowerCase().includes('balance'));
               let devSheetName = workbook.SheetNames.find(n => n.toLowerCase().includes('horas dev') || n.toLowerCase().includes('dev'));
               let qaSheetName = workbook.SheetNames.find(n => n.toLowerCase().includes('horas qa') || n.toLowerCase().includes('qa'));
 
-              if (!huSheetName) huSheetName = workbook.SheetNames[0];
+              if (!huSheetName) {
+                huSheetName = workbook.SheetNames[0];
+              }
 
-              const sprintMatch = huSheetName.match(/Sprint\s*(\d+)/i);
-              if (sprintMatch) activeId = `Sprint ${sprintMatch[1]}`;
+              const sprintMatch = huSheetName.match(/Sprint\s*(\d+)/i) || originName.match(/Sprint\s*(\d+)/i);
+              if (sprintMatch) {
+                activeId = `Sprint ${sprintMatch[1]}`;
+              }
 
               const parsedSprints = {};
               parsedSprints[activeId] = {
@@ -747,7 +822,7 @@
 
               const active = parsedSprints[activeId];
 
-              // Parsear Capacidad-Balance & Parámetros
+              // Parsear parámetros desde Capacidad-Balance si existe
               if (capSheetName) {
                 const sheet = workbook.Sheets[capSheetName];
                 const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
@@ -799,7 +874,7 @@
                 if (resourcesList.length > 0) active.resources = resourcesList;
               }
 
-              // Parsear HUs
+              // Parsear HUs desde la pestaña de historias
               if (huSheetName) {
                 const sheet = workbook.Sheets[huSheetName];
                 const rows = XLSX.utils.sheet_to_json(sheet);
@@ -955,58 +1030,6 @@
             return cleanStr;
           };
 
-          const handleLinkLocalExcel = async () => {
-            if (!window.showOpenFilePicker) {
-              addLog("Su navegador no soporta el Acceso Directo a Archivos. Use la opción de Arrastre Manual.");
-              showFeedback("Función no soportada en Safari/Firefox. Use Chrome o Edge.", "error");
-              return;
-            }
-            try {
-              const [handle] = await window.showOpenFilePicker({
-                types: [{
-                  description: 'Archivos de Planeación Ágil (.xlsx)',
-                  accept: { 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'] }
-                }],
-                excludeAcceptAllOption: true,
-                multiple: false
-              });
-
-              setFileHandle(handle);
-              setFileNameLinked(handle.name);
-              addLog(`Vínculo de flujo directo activo: ${handle.name}`);
-
-              const file = await handle.getFile();
-              const reader = new FileReader();
-              reader.onload = (e) => {
-                const workbook = XLSX.read(e.target.result, { type: 'binary', cellDates: true });
-                parseWorkbookData(workbook, handle.name);
-              };
-              reader.readAsBinaryString(file);
-            } catch (err) {
-              addLog(`Vinculación cancelada o fallida: ${err.message}`);
-            }
-          };
-
-          const handleDirectSyncSave = async () => {
-            if (!fileHandle) {
-              showFeedback("No hay ningún archivo de SharePoint vinculado. Descargue manualmente.", "error");
-              return;
-            }
-            try {
-              addLog("Generando nueva estructura binaria de sobrescritura...");
-              const blob = generateExcelBlob();
-              const writable = await fileHandle.createWritable();
-              await writable.write(blob);
-              await writable.close();
-
-              addLog(`🟢 Sincronizado: '${fileHandle.name}' actualizado directamente. OneDrive subirá el cambio.`);
-              showFeedback("¡Archivo local actualizado y sincronizado!", "success");
-            } catch (err) {
-              addLog(`Error de escritura directa: ${err.message}`);
-              showFeedback("Permiso de escritura denegado en el archivo local", "error");
-            }
-          };
-
           const handleDownloadBackup = () => {
             try {
               const blob = generateExcelBlob();
@@ -1121,7 +1144,6 @@
             return new Blob([buf], { type: 'application/octet-stream' });
           };
 
-          // DESCARGA DE PLANTILLAS DISTRIBUIDAS (Con Glosario de IDs de Recursos)
           const handleDownloadTemplate = (roleType) => {
             const wb = window.XLSX.utils.book_new();
             let data = [];
@@ -1170,7 +1192,6 @@
               });
             }
 
-            // Inyectar listado de equipo como glosario de apoyo en la plantilla
             const teamGlossary = activeSprint.resources.map(r => ({
               "ID Recurso": r.id,
               "Nombre": r.name,
@@ -1181,7 +1202,7 @@
             const ws = window.XLSX.utils.json_to_sheet(data);
             const wsTeam = window.XLSX.utils.json_to_sheet(teamGlossary);
             window.XLSX.utils.book_append_sheet(wb, ws, sheetName);
-            window.XLSX.utils.book_append_sheet(wb, wsTeam, "Glosario_Equipo");
+            window.XLSX.utils.book_append_sheet(wb, wsTeam, "Lista_Equipo");
 
             const excelBuf = window.XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
             const buf = new ArrayBuffer(excelBuf.length);
@@ -1418,7 +1439,6 @@
           };
 
           const handleOpenAddResourceModal = () => {
-            // Generar ID sugerido secuencialmente
             const currentResources = activeSprint.resources || [];
             const ids = currentResources.map(r => parseInt(r.id)).filter(id => !isNaN(id));
             const nextId = ids.length > 0 ? Math.max(...ids) + 1 : 1;
@@ -1684,39 +1704,23 @@
                     <div>
                       <div className="flex items-center gap-2">
                         <h1 className="text-xl font-bold tracking-tight">Capacidad Ágil & DoD Cascadas</h1>
-                        {fileHandle ? (
-                          <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-500 text-white flex items-center gap-1">
-                            🟢 Sincronizado Directo: {fileNameLinked}
-                          </span>
-                        ) : (
-                          <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-amber-500 text-white flex items-center gap-1">
-                            Local Caching (Healed)
-                          </span>
-                        )}
+                        <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-amber-500 text-white flex items-center gap-1">
+                          Local Caching (Healed)
+                        </span>
                       </div>
                       <p className="text-slate-400 text-xs mt-0.5">Seguimiento de DoD, Retrasos y Fusión Inteligente de Horas</p>
                     </div>
                   </div>
                   
                   <div className="flex items-center gap-3 w-full md:w-auto justify-end">
-                    {fileHandle ? (
-                      <button 
-                        onClick={handleDirectSyncSave} 
-                        className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black tracking-wide transition flex items-center gap-2 shadow-lg shadow-emerald-500/10"
-                      >
-                        <Icons.CloudSync />
-                        Sincronizar SharePoint (.xlsx)
-                      </button>
-                    ) : (
-                      <button 
-                        onClick={handleDownloadBackup} 
-                        className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-lg"
-                        title="Descarga el archivo Excel estructurado"
-                      >
-                        <Icons.CloudSync />
-                        Descargar Base de Datos
-                      </button>
-                    )}
+                    <button 
+                      onClick={handleDownloadBackup} 
+                      className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-lg"
+                      title="Descarga el archivo Excel estructurado"
+                    >
+                      <Icons.CloudSync />
+                      Descargar Base de Datos
+                    </button>
 
                     <div className="bg-slate-800/80 border border-slate-700/60 rounded-xl px-4 py-2 flex items-center gap-4 text-sm w-full md:w-auto">
                       <div>
@@ -1807,7 +1811,7 @@
                   </div>
                 </section>
 
-                {}
+                {/* --- PESTAÑAS DE NAVEGACIÓN --- */}
                 <div className="flex flex-col sm:flex-row gap-2 border-b border-slate-200 pb-px">
                   <button onClick={() => setActiveTab('consolidado')} className={`px-5 py-3 font-semibold text-sm rounded-t-xl transition flex items-center gap-2 ${activeTab === 'consolidado' ? 'bg-white border-t border-x border-slate-200 text-blue-600 shadow-sm' : 'text-slate-500 hover:bg-slate-100'}`}><Icons.Database /> Tablero Sprint ({consolidatedStories.length})</button>
                   <button onClick={() => setActiveTab('dev')} className={`px-5 py-3 font-semibold text-sm rounded-t-xl transition flex items-center gap-2 ${activeTab === 'dev' ? 'bg-white border-t border-x border-slate-200 text-blue-600 shadow-sm' : 'text-slate-500 hover:bg-slate-100'}`}><Icons.User /> Desglose DEV Cascadas</button>
@@ -1818,13 +1822,13 @@
                   <button onClick={() => setActiveTab('po')} className={`px-5 py-3 font-semibold text-sm rounded-t-xl transition flex items-center gap-2 sm:ml-auto ${activeTab === 'po' ? 'bg-white border-t border-x border-slate-200 text-blue-600 shadow-sm' : 'text-slate-500 hover:bg-slate-100'}`}><Icons.Settings /> Parámetros Globales & DoD</button>
                 </div>
 
-                {/* TAB: CONFIGURACIÓN BASE DE DATOS Y RESET */}
+                {/* TAB: CONFIGURACIÓN BASE DE DATOS Y CARGA EXCEL */}
                 {activeTab === 'sharepoint' && (
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-6">
                       <div>
-                        <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2 text-emerald-700"><Icons.CloudSync /> Conexión Directa a OneDrive / SharePoint</h3>
-                        <p className="text-sm text-slate-500 mt-1">Sincronice o vincule un nuevo archivo de planificación o reporte parcial desde su PC de forma simultánea.</p>
+                        <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2 text-emerald-700"><Icons.CloudSync /> Importación y Sincronización Excel</h3>
+                        <p className="text-sm text-slate-500 mt-1">Sube el archivo consolidado o plantillas parciales de tus desarrolladores y aseguradores de forma segura.</p>
                       </div>
 
                       <div className="border-2 border-dashed border-emerald-300 rounded-2xl p-8 hover:bg-slate-50/50 transition cursor-pointer flex flex-col items-center justify-center text-center relative">
@@ -1841,23 +1845,23 @@
                         <div className="bg-emerald-50 text-emerald-600 p-4 rounded-full mb-3"><Icons.CloudSync /></div>
                         <h4 className="font-bold text-slate-800 text-sm">Arrastre y suelte su archivo Excel corporativo aquí</h4>
                         <p className="text-xs text-slate-400 mt-1 max-w-sm">
-                          Soporta base de datos completa de sprints o plantillas devueltas por desarrolladores/QA (se detectará y fusionará automáticamente).
+                          Soporta la base de datos completa de sprints (ej: <strong>Planning-Sprint 58_2.xlsx</strong>) o plantillas devueltas por desarrolladores y QA.
                         </p>
                         <span className="mt-3 px-3 py-1 bg-slate-100 hover:bg-slate-200 text-[11px] font-bold text-slate-700 rounded-lg transition">Seleccionar desde Archivos</span>
                       </div>
 
                       <div className="bg-rose-50 border border-rose-200 rounded-xl p-5 space-y-4">
                         <div>
-                          <h4 className="font-bold text-rose-800 text-sm flex items-center gap-1.5"><Icons.AlertCircle /> Formatear y Limpiar la Aplicación (Handover de Consultoría)</h4>
-                          <p className="text-xs text-rose-700 mt-1">Borra instantáneamente toda la memoria de sprints, backlog y recursos locales de su navegador, asegurando que no se mezclen datos entre clientes ni queden rastros confidenciales.</p>
+                          <h4 className="font-bold text-rose-800 text-sm flex items-center gap-1.5"><Icons.AlertCircle /> Formatear y Limpiar la Aplicación (Reset de Fábrica)</h4>
+                          <p className="text-xs text-rose-700 mt-1">Borra instantáneamente toda la memoria local del navegador de forma segura para iniciar un nuevo proyecto desde cero.</p>
                         </div>
-                        <button onClick={triggerAppResetConfirm} className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-lg transition shadow-md">Reset Completo / Handover Seguro</button>
+                        <button onClick={triggerAppResetConfirm} className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-lg transition shadow-md">Reset Completo</button>
                       </div>
                     </div>
 
                     <div className="bg-slate-900 text-slate-200 rounded-2xl shadow-sm p-6 flex flex-col h-full min-h-[300px]">
                       <div className="border-b border-slate-800 pb-3 mb-4">
-                        <h4 className="font-bold text-sm text-slate-400 flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>Consola del Gestor de Excel</h4>
+                        <h4 className="font-bold text-sm text-slate-400 flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>Consola de Procesamiento</h4>
                       </div>
                       <div className="flex-1 overflow-y-auto space-y-1.5 font-mono text-[10px] text-emerald-400 max-h-80">
                         {syncLogs.length === 0 ? <span className="text-slate-500 italic">Esperando acciones de lectura o escritura de datos...</span> : syncLogs.map((log, idx) => <div key={idx} className="leading-relaxed border-b border-slate-800/20 pb-1">{log}</div>)}
@@ -1872,7 +1876,7 @@
                     <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                       <div>
                         <h3 className="font-bold text-slate-900 text-lg">Control de Historias e Integración de Criterios DoD</h3>
-                        <p className="text-xs text-slate-500 font-medium text-blue-600">Asigne los recursos por sus IDs numéricos para activar la sincronización con plantillas externas</p>
+                        <p className="text-xs text-slate-500 font-medium text-blue-600 font-semibold">Usa los IDs de recursos configurados en la pestaña Equipo para una correcta sincronización</p>
                       </div>
                       <button onClick={handleOpenAddModal} className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 shadow-lg rounded-xl transition flex items-center gap-1.5"><Icons.Plus /> Agregar HU</button>
                     </div>
@@ -1890,7 +1894,7 @@
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                           {consolidatedStories.length === 0 ? (
-                            <tr><td colSpan="6" className="px-6 py-12 text-center text-slate-400">No hay Historias de Usuario registradas para este Sprint. Utilice el Backlog Global para integrar pendientes o cree una nueva.</td></tr>
+                            <tr><td colSpan="6" className="px-6 py-12 text-center text-slate-400">No hay Historias de Usuario registradas para este Sprint. Utilice el Backlog Global o cargue sus archivos Excel estructurados en la pestaña Configuración de Base de Datos.</td></tr>
                           ) : (
                             consolidatedStories.map((hu) => {
                               if (!hu || !hu.id) return null;
@@ -2086,7 +2090,7 @@
                     <div className="flex justify-between items-center border-b border-slate-100 pb-4">
                       <div>
                         <h3 className="font-bold text-slate-900 text-lg flex items-center gap-2"><Icons.Users /> Gestión de Equipo & Recursos del Proyecto</h3>
-                        <p className="text-xs text-slate-500">Asocie y configure los IDs únicos que utilizarán los desarrolladores en las plantillas de Excel compartidas.</p>
+                        <p className="text-xs text-slate-500 font-medium">Asocia y configura los IDs numéricos únicos que se utilizarán en las plantillas de Excel compartidas.</p>
                       </div>
                       <button onClick={handleOpenAddResourceModal} className="px-4 py-2 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 shadow-lg rounded-xl transition flex items-center gap-1.5"><Icons.Plus /> Agregar Recurso</button>
                     </div>
@@ -2305,7 +2309,7 @@
                 )}
               </main>
 
-              {/* MODAL: CONFIGURAR Y CREAR NUEVO SPRINT */}
+              {}
               {isCreateModalOpen && (
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                   <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 max-w-xl w-full max-h-[90vh] overflow-hidden flex flex-col animate-fade-in">
@@ -2408,7 +2412,6 @@
               )}
 
               {}
-              {/* MODAL: CREACIÓN / EDICIÓN HU */}
               {isModalOpen && (
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                   <div className="bg-white rounded-2xl shadow-2xl border border-slate-100 max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
@@ -2535,7 +2538,7 @@
                 </div>
               )}
 
-              {/* MODAL: CREACIÓN / EDICIÓN RECURSO */}
+              {}
               {isResourceModalOpen && (
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                   <div className="bg-white rounded-2xl shadow-2xl border border-slate-100 max-w-md w-full overflow-hidden flex flex-col">
