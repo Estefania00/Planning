@@ -1,0 +1,1638 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Capacidad Ágil & DoD Cascadas</title>
+    <!-- Tailwind CSS Play CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & ReactDOM (Librerías de Producción de React) -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <!-- Babel Standalone (Para compilar JSX directamente en el navegador de forma inmediata) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Motor de Excel SheetJS -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    
+    <style>
+        /* Animación suave para cambios de pestañas y modales */
+        .animate-fade-in {
+            animation: fadeIn 0.2s ease-out forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased pb-12">
+    <!-- Contenedor donde React renderizará la aplicación -->
+    <div id="root"></div>
+
+    <script type="text/babel">
+        // Extraemos Hooks de React expuestos en el ámbito global por el script de producción
+        const { useState, useMemo, useEffect } = React;
+
+        const Icons = {
+          Calendar: () => (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          ),
+          User: () => (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+          ),
+          Clock: () => (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          ),
+          Settings: () => (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          ),
+          Trash: () => (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          ),
+          Pencil: () => (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+            </svg>
+          ),
+          Plus: () => (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+          ),
+          Check: () => (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+            </svg>
+          ),
+          AlertCircle: () => (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          ),
+          ChevronUp: () => (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 15l7-7 7 7" />
+            </svg>
+          ),
+          ChevronDown: () => (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          ),
+          Copy: () => (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+            </svg>
+          ),
+          Chart: () => (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 002 2h2a2 2 0 002-2z" />
+            </svg>
+          ),
+          Database: () => (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 7v10c0 2.21 3.58 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.58 4 8 4s8-1.79 8-4M4 7c0-2.21 3.58-4 8-4s8 1.79 8 4m0 5c0 2.21-3.58 4-8 4s-8-1.79-8-4" />
+            </svg>
+          ),
+          CloudSync: () => (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 12v4m0 0l-2-2m2 2l2-2" />
+            </svg>
+          ),
+          Inbox: () => (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0a2 2 0 01-2 2H6a2 2 0 01-2-2m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+            </svg>
+          )
+        };
+
+        const cleanTemplateData = {
+          'Sprint 1': {
+            id: 'Sprint 1',
+            start: '2026-07-27',
+            end: '2026-08-12',
+            holidays: [],
+            resources: [
+              { id: '1', name: 'Desarrollador 1', role: 'DEV', capacity: 8, exceptionStart: '' },
+              { id: '2', name: 'Desarrollador 2', role: 'DEV', capacity: 8, exceptionStart: '' },
+              { id: '3', name: 'QA 1', role: 'QA', capacity: 4, exceptionStart: '' }
+            ],
+            userStories: [],
+            devQueues: {},
+            qaQueues: {},
+            dodList: ['Código aprobado', 'Unitarias > 80%', 'Pruebas QA OK', 'Manual Técnico']
+          }
+        };
+
+        const initialSprintsData = {
+          'Sprint 58': {
+            id: 'Sprint 58',
+            start: '2026-07-06',
+            end: '2026-07-22',
+            holidays: ['2026-07-20'],
+            resources: [
+              { id: '1', name: 'Briyith Castaño', role: 'DEV', capacity: 8, exceptionStart: '' },
+              { id: '2', name: 'Luis Oviedo', role: 'DEV', capacity: 8, exceptionStart: '' },
+              { id: '3', name: 'Jordan Reyes', role: 'QA', capacity: 4, exceptionStart: '' }
+            ],
+            userStories: [
+              {
+                id: '5410',
+                name: 'Sincronización Automática SharePoint (Planning-Sprint 58.xlsx)',
+                points: 5,
+                devAssigned: '1',
+                qaAssigned: '3',
+                hasDev: true,
+                hasQa: true,
+                status: 'DoD Compliant (Done)',
+                delayCategory: '',
+                delayReason: '',
+                dodChecked: ['Código aprobado', 'Unitarias > 80%', 'Pruebas QA OK'],
+                devHours: { analisis: 2, diseño: 1, casosPrueba: 2, pUnitarias: 2, desarrollo: 12, documentacion: 2 },
+                qaHours: { planeacion: 1, diseño: 2, ejecucion: 4, cierre: 0.5, entrega: 0.5, regresion: 0 }
+              },
+              {
+                id: '5411',
+                name: 'Reporte Consolidado de Balance de Capacidades',
+                points: 8,
+                devAssigned: '2',
+                qaAssigned: '3',
+                hasDev: true,
+                hasQa: true,
+                status: 'Retrasada / Bloqueada',
+                delayCategory: 'Falta DoD Pruebas',
+                delayReason: 'El despliegue de pruebas falló en el pipeline de Integración Continua.',
+                dodChecked: ['Código aprobado', 'Unitarias > 80%'],
+                devHours: { analisis: 2, diseño: 2, casosPrueba: 2, pUnitarias: 2, desarrollo: 20, documentacion: 4 },
+                qaHours: { planeacion: 2, diseño: 2, ejecucion: 8, cierre: 0.5, entrega: 0.5, regresion: 2 }
+              }
+            ],
+            devQueues: { '1': ['5410'], '2': ['5411'] },
+            qaQueues: { '3': ['5410', '5411'] },
+            dodList: ['Código aprobado', 'Unitarias > 80%', 'Pruebas QA OK', 'Manual Técnico']
+          },
+          'Sprint 59': {
+            id: 'Sprint 59',
+            start: '2026-07-27',
+            end: '2026-08-12',
+            holidays: ['2026-08-07'],
+            resources: [
+              { id: '1', name: 'Briyith Castaño', role: 'DEV', capacity: 8, exceptionStart: '' },
+              { id: '2', name: 'Luis Oviedo', role: 'DEV', capacity: 8, exceptionStart: '' },
+              { id: '3', name: 'Jordan Reyes', role: 'QA', capacity: 4, exceptionStart: '' }
+            ],
+            userStories: [
+              {
+                id: '5536',
+                name: 'Automatización de Tareas Paralelas (Planning-Sprint 59.xlsx)',
+                points: 13,
+                devAssigned: '1',
+                qaAssigned: '3',
+                hasDev: true,
+                hasQa: true,
+                status: 'En Progreso',
+                delayCategory: '',
+                delayReason: '',
+                dodChecked: ['Código aprobado'],
+                devHours: { analisis: 2, diseño: 2, casosPrueba: 3, pUnitarias: 3, desarrollo: 24, documentacion: 4 },
+                qaHours: { planeacion: 2, diseño: 3, ejecucion: 9, cierre: 0.5, entrega: 0.5, regresion: 0 }
+              },
+              {
+                id: '5537',
+                name: 'SLAs y Notificaciones Automatizadas',
+                points: 8,
+                devAssigned: '2',
+                qaAssigned: '',
+                hasDev: true,
+                hasQa: false,
+                status: 'En Progreso',
+                delayCategory: '',
+                delayReason: '',
+                dodChecked: [],
+                devHours: { analisis: 2, diseño: 2, casosPrueba: 3, pUnitarias: 2, desarrollo: 22, documentacion: 4 },
+                qaHours: { planeacion: 0, diseño: 0, ejecucion: 0, cierre: 0, entrega: 0, regresion: 0 }
+              },
+              {
+                id: '5727',
+                name: 'Decomiso Operativo Task - Desconexiones',
+                points: 8,
+                devAssigned: '2',
+                qaAssigned: '',
+                hasDev: true,
+                hasQa: false,
+                status: 'En Progreso',
+                delayCategory: '',
+                delayReason: '',
+                dodChecked: [],
+                devHours: { analisis: 2, diseño: 2, casosPrueba: 3, pUnitarias: 2, desarrollo: 20, documentacion: 4 },
+                qaHours: { planeacion: 0, diseño: 0, ejecucion: 0, cierre: 0, entrega: 0, regresion: 0 }
+              },
+              {
+                id: '4520',
+                name: 'Auto-asignación Rol Portal a Contactos CRM',
+                points: 5,
+                devAssigned: '2',
+                qaAssigned: '',
+                hasDev: true,
+                hasQa: false,
+                status: 'Planeada',
+                delayCategory: '',
+                delayReason: '',
+                dodChecked: [],
+                devHours: { analisis: 1, diseño: 1, casosPrueba: 2, pUnitarias: 2, desarrollo: 20, documentacion: 2 },
+                qaHours: { planeacion: 0, diseño: 0, ejecucion: 0, cierre: 0, entrega: 0, regresion: 0 }
+              },
+              {
+                id: '5509',
+                name: '[CSM] Métricas Base de Navegación',
+                points: 3,
+                devAssigned: '1',
+                qaAssigned: '',
+                hasDev: true,
+                hasQa: false,
+                status: 'En Progreso',
+                delayCategory: '',
+                delayReason: '',
+                dodChecked: ['Código aprobado', 'Unitarias > 80%'],
+                devHours: { analisis: 0, diseño: 1, casosPrueba: 1, pUnitarias: 2, desarrollo: 10, documentacion: 2 },
+                qaHours: { planeacion: 0, diseño: 0, ejecucion: 0, cierre: 0, entrega: 0, regresion: 0 }
+              },
+              {
+                id: '5722',
+                name: '[CSM] Visibilidad y Acceso Seguro al Módulo UEA',
+                points: 8,
+                devAssigned: '1',
+                qaAssigned: '',
+                hasDev: true,
+                hasQa: false,
+                status: 'Planeada',
+                delayCategory: '',
+                delayReason: '',
+                dodChecked: [],
+                devHours: { analisis: 2, diseño: 2, casosPrueba: 3, pUnitarias: 3, desarrollo: 28, documentacion: 4 },
+                qaHours: { planeacion: 0, diseño: 0, ejecucion: 0, cierre: 0, entrega: 0, regresion: 0 }
+              },
+              {
+                id: '5522',
+                name: 'Checks de Liberación en Programación',
+                points: 5,
+                devAssigned: '',
+                qaAssigned: '3',
+                hasDev: false,
+                hasQa: true,
+                status: 'Planeada',
+                delayCategory: '',
+                delayReason: '',
+                dodChecked: [],
+                devHours: { analisis: 0, diseño: 0, casosPrueba: 0, pUnitarias: 0, desarrollo: 0, documentacion: 0 },
+                qaHours: { planeacion: 2, diseño: 2, ejecucion: 9, cierre: 0.5, entrega: 0.5, regresion: 0 }
+              },
+              {
+                id: '4204',
+                name: 'Ajuste de Alertas Periódicas y Parámetros',
+                points: 5,
+                devAssigned: '',
+                qaAssigned: '3',
+                hasDev: false,
+                hasQa: true,
+                status: 'Planeada',
+                delayCategory: '',
+                delayReason: '',
+                dodChecked: [],
+                devHours: { analisis: 0, diseño: 0, casosPrueba: 0, pUnitarias: 0, desarrollo: 0, documentacion: 0 },
+                qaHours: { planeacion: 2, diseño: 2, ejecucion: 10, cierre: 0.5, entrega: 0.5, regresion: 0 }
+              }
+            ],
+            devQueues: {
+              '1': ['5536', '5509', '5722'],
+              '2': ['5537', '5727', '4520']
+            },
+            qaQueues: {
+              '3': ['5522', '4204', '5536']
+            },
+            dodList: ['Código aprobado', 'Unitarias > 80%', 'Pruebas QA OK', 'Manual Técnico']
+          }
+        };
+
+        function App() {
+          const [sprints, setSprints] = useState(initialSprintsData);
+          const [activeSprintId, setActiveSprintId] = useState('Sprint 59');
+          const [newHoliday, setNewHoliday] = useState('');
+          const [confirmState, setConfirmState] = useState({ isOpen: false, title: '', message: '', onConfirm: null });
+          const [globalBacklog, setGlobalBacklog] = useState([
+            {
+              id: '9901',
+              name: 'HU Arrastrada de Sprint 57 - Migración Core BD',
+              points: 13,
+              hasDev: true,
+              hasQa: true,
+              devHours: { analisis: 4, diseño: 4, casosPrueba: 4, pUnitarias: 4, desarrollo: 32, documentacion: 8 },
+              qaHours: { planeacion: 4, diseño: 4, ejecucion: 16, cierre: 2, entrega: 2, regresion: 8 }
+            }
+          ]);
+
+          const activeSprint = useMemo(() => sprints[activeSprintId] || {
+            id: activeSprintId, start: '2026-07-27', end: '2026-08-12', holidays: [], resources: [], userStories: [], devQueues: {}, qaQueues: {}, dodList: []
+          }, [sprints, activeSprintId]);
+
+          const [activeTab, setActiveTab] = useState('consolidado'); 
+          const [isModalOpen, setIsModalOpen] = useState(false);
+          const [modalMode, setModalMode] = useState('add'); 
+          const [editingStoryId, setEditingStoryId] = useState(null);
+          const [feedbackMessage, setFeedbackMessage] = useState(null);
+          const [feedbackType, setFeedbackType] = useState('success');
+          const [syncLogs, setSyncLogs] = useState([]);
+
+          const addLog = (msg) => {
+            const time = new Date().toLocaleTimeString();
+            setSyncLogs(prev => [`[${time}] ${msg}`, ...prev.slice(0, 49)]);
+          };
+
+          const isBusinessDay = (date, holidayList) => {
+            const day = date.getDay(); 
+            if (day === 0 || day === 6) return false;
+            const dateStr = date.toISOString().split('T')[0];
+            return !holidayList.includes(dateStr);
+          };
+
+          const sprintWorkingDays = useMemo(() => {
+            let start = new Date(activeSprint.start + 'T00:00:00');
+            let end = new Date(activeSprint.end + 'T00:00:00');
+            if (isNaN(start) || isNaN(end) || start > end) return 0;
+            
+            let count = 0;
+            let current = new Date(start);
+            while (current <= end) {
+              if (isBusinessDay(current, activeSprint.holidays)) count++;
+              current.setDate(current.getDate() + 1);
+            }
+            return count;
+          }, [activeSprint]);
+
+          const getNthBusinessDay = (startDateStr, n, holidayList) => {
+            if (n <= 0) return startDateStr;
+            let currentDate = new Date(startDateStr + 'T00:00:00');
+            let count = 0;
+            let first = true;
+            while (count < n) {
+              if (!first) currentDate.setDate(currentDate.getDate() + 1);
+              else first = false;
+              if (isBusinessDay(currentDate, holidayList)) count++;
+            }
+            return currentDate.toISOString().split('T')[0];
+          };
+
+          const formatFriendlyDate = (dateStr) => {
+            if (!dateStr) return 'No definida';
+            const date = new Date(dateStr + 'T00:00:00');
+            if (isNaN(date)) return dateStr;
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            let formatted = date.toLocaleDateString('es-ES', options);
+            return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+          };
+
+          const calculatedSchedules = useMemo(() => {
+            const devResults = {};
+            const qaResults = {};
+
+            activeSprint.resources.filter(r => r.role === 'DEV').forEach(resource => {
+              const queue = activeSprint.devQueues[resource.id] || [];
+              const resourceHUs = queue.map(id => activeSprint.userStories.find(hu => hu.id === id)).filter(hu => hu && hu.hasDev);
+
+              let cumulativeHours = 0;
+              const startFrom = resource.exceptionStart ? resource.exceptionStart : activeSprint.start;
+
+              resourceHUs.forEach((hu) => {
+                const totalDevHours = Object.values(hu.devHours).reduce((a, b) => a + Number(b || 0), 0);
+                const prevCumulativeDays = Math.ceil(cumulativeHours / resource.capacity);
+                cumulativeHours += totalDevHours;
+                const totalCumulativeDays = Math.ceil(cumulativeHours / resource.capacity);
+
+                const startDayIndex = prevCumulativeDays + 1;
+                const endDayIndex = totalCumulativeDays;
+
+                devResults[hu.id] = {
+                  hours: totalDevHours,
+                  startDate: getNthBusinessDay(startFrom, startDayIndex, activeSprint.holidays),
+                  endDate: getNthBusinessDay(startFrom, endDayIndex, activeSprint.holidays)
+                };
+              });
+            });
+
+            activeSprint.resources.filter(r => r.role === 'QA').forEach(resource => {
+              const queue = activeSprint.qaQueues[resource.id] || [];
+              const resourceHUs = queue.map(id => activeSprint.userStories.find(hu => hu.id === id)).filter(hu => hu && hu.hasQa);
+
+              let cumulativeHours = 0;
+              const startFrom = resource.exceptionStart ? resource.exceptionStart : activeSprint.start;
+
+              resourceHUs.forEach((hu) => {
+                const totalQaHours = Object.values(hu.qaHours).reduce((a, b) => a + Number(b || 0), 0);
+                const prevCumulativeDays = Math.ceil(cumulativeHours / resource.capacity);
+                cumulativeHours += totalQaHours;
+                const totalCumulativeDays = Math.ceil(cumulativeHours / resource.capacity);
+
+                const startDayIndex = prevCumulativeDays + 1;
+                const endDayIndex = totalCumulativeDays;
+
+                qaResults[hu.id] = {
+                  hours: totalQaHours,
+                  startDate: getNthBusinessDay(startFrom, startDayIndex, activeSprint.holidays),
+                  endDate: getNthBusinessDay(startFrom, endDayIndex, activeSprint.holidays)
+                };
+              });
+            });
+
+            return { dev: devResults, qa: qaResults };
+          }, [activeSprint]);
+
+          const consolidatedStories = useMemo(() => {
+            return activeSprint.userStories.map(hu => {
+              const devSched = calculatedSchedules.dev[hu.id];
+              const qaSched = calculatedSchedules.qa[hu.id];
+
+              const totalDevHours = hu.hasDev ? Object.values(hu.devHours).reduce((a, b) => a + Number(b || 0), 0) : 0;
+              const totalQaHours = hu.hasQa ? Object.values(hu.qaHours).reduce((a, b) => a + Number(b || 0), 0) : 0;
+
+              let finalDeliveryDate = '';
+              if (hu.hasQa && qaSched) finalDeliveryDate = qaSched.endDate;
+              else if (hu.hasDev && devSched) finalDeliveryDate = devSched.endDate;
+
+              const totalDodItems = activeSprint.dodList.length;
+              const checkedCount = (hu.dodChecked || []).length;
+              const dodProgress = totalDodItems > 0 ? Math.round((checkedCount / totalDodItems) * 100) : 0;
+
+              return {
+                ...hu,
+                totalDevHours,
+                totalQaHours,
+                devStartDate: devSched ? devSched.startDate : '',
+                devEndDate: devSched ? devSched.endDate : '',
+                qaStartDate: qaSched ? qaSched.startDate : '',
+                qaEndDate: qaSched ? qaSched.endDate : '',
+                finalDeliveryDate,
+                dodProgress
+              };
+            });
+          }, [activeSprint, calculatedSchedules]);
+
+          const resourceMetrics = useMemo(() => {
+            return activeSprint.resources.map(res => {
+              const isDev = res.role === 'DEV';
+              const totalCapacityHours = sprintWorkingDays * res.capacity;
+
+              let requiredHours = 0;
+              if (isDev) {
+                requiredHours = consolidatedStories
+                  .filter(hu => hu.hasDev && hu.devAssigned === res.id)
+                  .reduce((sum, hu) => sum + hu.totalDevHours, 0);
+              } else {
+                requiredHours = consolidatedStories
+                  .filter(hu => hu.hasQa && hu.qaAssigned === res.id)
+                  .reduce((sum, hu) => sum + hu.totalQaHours, 0);
+              }
+
+              const balanceHours = totalCapacityHours - requiredHours;
+              const occupationPercent = totalCapacityHours > 0 ? (requiredHours / totalCapacityHours) * 100 : 0;
+
+              let statusText = 'Con disponibilidad';
+              let statusColor = 'bg-emerald-100 text-emerald-800 border-emerald-300';
+              let progressColor = 'bg-emerald-500';
+
+              if (occupationPercent === 100) {
+                statusText = 'Al límite (0 dispo)';
+                statusColor = 'bg-amber-100 text-amber-800 border-amber-300';
+                progressColor = 'bg-amber-500';
+              } else if (occupationPercent > 100) {
+                statusText = 'Sobrecargado';
+                statusColor = 'bg-rose-100 text-rose-800 border-rose-300';
+                progressColor = 'bg-rose-500';
+              }
+
+              return {
+                ...res,
+                totalCapacityHours,
+                requiredHours,
+                balanceHours,
+                occupationPercent,
+                statusText,
+                statusColor,
+                progressColor
+              };
+            });
+          }, [activeSprint, consolidatedStories, sprintWorkingDays]);
+
+          const getResourceMetricsForSprint = (sprintId) => {
+            const sprint = sprints[sprintId];
+            if (!sprint) return [];
+            let start = new Date(sprint.start + 'T00:00:00');
+            let end = new Date(sprint.end + 'T00:00:00');
+            let workingDays = 0;
+            if (!(isNaN(start) || isNaN(end) || start > end)) {
+              let current = new Date(start);
+              while (current <= end) {
+                if (isBusinessDay(current, sprint.holidays)) workingDays++;
+                current.setDate(current.getDate() + 1);
+              }
+            }
+
+            return sprint.resources.map(res => {
+              const isDev = res.role === 'DEV';
+              const totalCapacity = workingDays * res.capacity;
+              let reqHours = 0;
+              sprint.userStories.forEach(hu => {
+                if (isDev && hu.hasDev && hu.devAssigned === res.id) {
+                  reqHours += Object.values(hu.devHours).reduce((a, b) => a + Number(b || 0), 0);
+                } else if (!isDev && hu.hasQa && hu.qaAssigned === res.id) {
+                  reqHours += Object.values(hu.qaHours).reduce((a, b) => a + Number(b || 0), 0);
+                }
+              });
+
+              return {
+                name: res.name, role: res.role, capacity: res.capacity, totalCapacityHours: totalCapacity, requiredHours: reqHours, balanceHours: totalCapacity - reqHours,
+                occupationPercent: totalCapacity > 0 ? (reqHours / totalCapacity) * 100 : 0, statusText: (reqHours / totalCapacity) * 100 > 100 ? 'Sobrecargado' : (reqHours / totalCapacity) * 100 === 100 ? 'Al límite' : 'Disponible'
+              };
+            });
+          };
+
+          const showFeedback = (msg, type = 'success') => {
+            setFeedbackMessage(msg);
+            setFeedbackType(type);
+            setTimeout(() => setFeedbackMessage(null), 3500);
+          };
+
+          const handleExportExcel = () => {
+            if (!window.XLSX) {
+              showFeedback("Motor de Excel en proceso de carga. Reintente en un momento.", "error");
+              return;
+            }
+
+            try {
+              addLog("Iniciando exportación de Base de Datos Excel...");
+              const wb = window.XLSX.utils.book_new();
+
+              Object.keys(sprints).forEach(sprintId => {
+                const sprint = sprints[sprintId];
+                const sprintTag = sprintId.replace(/\s+/g, '_');
+
+                const capMetrics = getResourceMetricsForSprint(sprintId);
+                const capData = capMetrics.map(r => ({
+                  "Nombre": r.name, "Rol": r.role, "Horas Disponibles por Día": r.capacity, "Capacidad Disponible Total (H)": r.totalCapacityHours, "Horas Requeridas Asignadas": r.requiredHours, "Balance Horas Remanentes": r.balanceHours, "Ocupación %": `${r.occupationPercent.toFixed(1)}%`, "Estado de Ocupación": r.statusText
+                }));
+                const wsCap = window.XLSX.utils.json_to_sheet(capData);
+                window.XLSX.utils.book_append_sheet(wb, wsCap, `Capacidad-Balance_${sprintTag}`);
+
+                const devData = sprint.userStories.filter(h => h.hasDev).map(h => {
+                  const totalDev = Object.values(h.devHours).reduce((a, b) => a + Number(b || 0), 0);
+                  return {
+                    "ID HU": h.id, "Historia": h.name, "Desarrollador Asignado": sprint.resources.find(r => r.id === h.devAssigned)?.name || 'Sin Asignar', "Análisis": h.devHours.analisis, "Diseño": h.devHours.diseño, "Casos Prueba": h.devHours.casosPrueba, "P. Unitarias": h.devHours.pUnitarias, "Desarrollo": h.devHours.desarrollo, "Documentación": h.devHours.documentacion, "Total DEV (Horas)": totalDev
+                  };
+                });
+                const wsDev = window.XLSX.utils.json_to_sheet(devData);
+                window.XLSX.utils.book_append_sheet(wb, wsDev, `Horas_DEV_${sprintTag}`);
+
+                const qaData = sprint.userStories.filter(h => h.hasQa).map(h => {
+                  const totalQa = Object.values(h.qaHours).reduce((a, b) => a + Number(b || 0), 0);
+                  return {
+                    "ID HU": h.id, "Historia": h.name, "Asegurador Asignado": sprint.resources.find(r => r.id === h.qaAssigned)?.name || 'Sin Asignar', "Planeación": h.qaHours.planeacion, "Diseño": h.qaHours.diseño, "Ejecución": h.qaHours.ejecucion, "Cierre": h.qaHours.cierre, "Entrega": h.qaHours.entrega, "Regresión": h.qaHours.regresion, "Total QA (Horas)": totalQa
+                  };
+                });
+                const wsQa = window.XLSX.utils.json_to_sheet(qaData);
+                window.XLSX.utils.book_append_sheet(wb, wsQa, `Horas_QA_${sprintTag}`);
+
+                const consData = sprint.userStories.map(h => {
+                  const totalDev = h.hasDev ? Object.values(h.devHours).reduce((a, b) => a + Number(b || 0), 0) : 0;
+                  const totalQa = h.hasQa ? Object.values(h.qaHours).reduce((a, b) => a + Number(b || 0), 0) : 0;
+                  const checkedCount = (h.dodChecked || []).length;
+                  const totalDod = sprint.dodList.length;
+                  const progress = totalDod > 0 ? Math.round((checkedCount / totalDod) * 100) : 0;
+
+                  return {
+                    "ID HU": h.id, "Historia de Usuario": h.name, "Puntos SP": h.points, "Estado Sprint": h.status || 'Planeada', "DoD Porcentaje Cumplido": `${progress}%`, "DoD Criterios Cumplidos": (h.dodChecked || []).join(', '), "Categoría de Retraso": h.delayCategory || '', "Motivo / Comentarios Retraso": h.delayReason || '', "Total Horas Estimadas": totalDev + totalQa
+                  };
+                });
+                const wsCons = window.XLSX.utils.json_to_sheet(consData);
+                window.XLSX.utils.book_append_sheet(wb, wsCons, `Consolidado_HUs_${sprintTag}`);
+              });
+
+              const backData = globalBacklog.map(h => ({
+                "ID HU": h.id, "Historia de Usuario": h.name, "Puntos SP": h.points, "Esfuerzo DEV": h.hasDev ? "Sí" : "No", "Esfuerzo QA": h.hasQa ? "Sí" : "No"
+              }));
+              const wsBack = window.XLSX.utils.json_to_sheet(backData);
+              window.XLSX.utils.book_append_sheet(wb, wsBack, `Backlog_Rollover_Pendientes`);
+
+              window.XLSX.writeFile(wb, `Planning_Database_Sprints.xlsx`);
+              addLog("¡Base de datos generada exitosamente como 'Planning_Database_Sprints.xlsx'!");
+              showFeedback("Base de Datos Excel descargada. Sobrescribe tu archivo en SharePoint.", "success");
+            } catch (err) {
+              addLog(`Error exportando Excel: ${err.message}`);
+              showFeedback("Ocurrió un error al generar el archivo Excel.", "error");
+            }
+          };
+
+          const handleImportExcel = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            addLog(`Leyendo archivo de base de datos Excel: ${file.name}...`);
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+              try {
+                const data = evt.target.result;
+                const workbook = window.XLSX.read(data, { type: 'binary' });
+                const parsedSprints = {};
+                let parsedBacklog = [];
+
+                workbook.SheetNames.forEach(sheetName => {
+                  if (sheetName === 'Backlog_Rollover_Pendientes') {
+                    const sheet = workbook.Sheets[sheetName];
+                    const jsonData = window.XLSX.utils.sheet_to_json(sheet);
+                    parsedBacklog = jsonData.map(row => ({
+                      id: String(row["ID HU"] || ''), name: row["Historia de Usuario"] || 'Historia sin nombre', points: Number(row["Puntos SP"] || 3), hasDev: row["Esfuerzo DEV"] === "Sí", hasQa: row["Esfuerzo QA"] === "Sí",
+                      devHours: { analisis: 0, diseño: 0, casosPrueba: 0, pUnitarias: 0, desarrollo: 0, documentacion: 0 },
+                      qaHours: { planeacion: 0, diseño: 0, ejecucion: 0, cierre: 0, entrega: 0, regresion: 0 }
+                    }));
+                    return;
+                  }
+
+                  const match = sheetName.match(/(Consolidado_HUs|Horas_DEV|Horas_QA|Capacidad-Balance)_(Sprint_\d+)/);
+                  if (match) {
+                    const [_, tableType, sprintId] = match;
+                    const cleanSprintId = sprintId.replace('_', ' ');
+                    
+                    if (!parsedSprints[cleanSprintId]) {
+                      parsedSprints[cleanSprintId] = {
+                        id: cleanSprintId, start: '2026-07-27', end: '2026-08-12', holidays: [],
+                        resources: [
+                          { id: '1', name: 'Briyith Castaño', role: 'DEV', capacity: 8, exceptionStart: '' },
+                          { id: '2', name: 'Luis Oviedo', role: 'DEV', capacity: 8, exceptionStart: '' },
+                          { id: '3', name: 'Jordan Reyes', role: 'QA', capacity: 4, exceptionStart: '' }
+                        ],
+                        userStories: [], devQueues: {}, qaQueues: {},
+                        dodList: ['Código aprobado', 'Unitarias > 80%', 'Pruebas QA OK', 'Manual Técnico']
+                      };
+                    }
+                    
+                    const sheet = workbook.Sheets[sheetName];
+                    const jsonData = window.XLSX.utils.sheet_to_json(sheet);
+                    
+                    if (tableType === 'Consolidado_HUs') {
+                      jsonData.forEach(row => {
+                        const id = String(row["ID HU"] || '');
+                        if (!id) return;
+                        const existing = parsedSprints[cleanSprintId].userStories.find(h => h.id === id);
+                        const dodChecked = row["DoD Criterios Cumplidos"] ? String(row["DoD Criterios Cumplidos"]).split(',').map(s => s.trim()).filter(Boolean) : [];
+                        const storyObj = {
+                          id, name: row["Historia de Usuario"] || 'Historia sin nombre', points: Number(row["Puntos SP"] || 3), status: row["Estado Sprint"] || 'Planeada', delayCategory: row["Categoría de Retraso"] || '', delayReason: row["Motivo / Comentarios Retraso"] || '', dodChecked, devAssigned: '', qaAssigned: '', hasDev: false, hasQa: false,
+                          devHours: { analisis: 0, diseño: 0, casosPrueba: 0, pUnitarias: 0, desarrollo: 0, documentacion: 0 },
+                          qaHours: { planeacion: 0, diseño: 0, ejecucion: 0, cierre: 0, entrega: 0, regresion: 0 }
+                        };
+                        if (existing) Object.assign(existing, storyObj);
+                        else parsedSprints[cleanSprintId].userStories.push(storyObj);
+                      });
+                    } else if (tableType === 'Horas_DEV') {
+                      jsonData.forEach(row => {
+                        const id = String(row["ID HU"] || '');
+                        if (!id) return;
+                        let story = parsedSprints[cleanSprintId].userStories.find(h => h.id === id);
+                        if (!story) {
+                          story = { id, name: row["Historia"] || 'Historia', points: 3, status: 'Planeada', dodChecked: [], devHours: {}, qaHours: {} };
+                          parsedSprints[cleanSprintId].userStories.push(story);
+                        }
+                        story.hasDev = true;
+                        story.devHours = {
+                          analisis: Number(row["Análisis"] || 0), diseño: Number(row["Diseño"] || 0), casosPrueba: Number(row["Casos Prueba"] || 0), pUnitarias: Number(row["P. Unitarias"] || 0), desarrollo: Number(row["Desarrollo"] || 0), documentacion: Number(row["Documentación"] || 0)
+                        };
+                        const devName = row["Desarrollador Asignado"];
+                        const resObj = parsedSprints[cleanSprintId].resources.find(r => r.name.toLowerCase() === String(devName || '').toLowerCase());
+                        if (resObj) {
+                          story.devAssigned = resObj.id;
+                          if (!parsedSprints[cleanSprintId].devQueues[resObj.id]) parsedSprints[cleanSprintId].devQueues[resObj.id] = [];
+                          if (!parsedSprints[cleanSprintId].devQueues[resObj.id].includes(id)) parsedSprints[cleanSprintId].devQueues[resObj.id].push(id);
+                        }
+                      });
+                    } else if (tableType === 'Horas_QA') {
+                      jsonData.forEach(row => {
+                        const id = String(row["ID HU"] || '');
+                        if (!id) return;
+                        let story = parsedSprints[cleanSprintId].userStories.find(h => h.id === id);
+                        if (!story) {
+                          story = { id, name: row["Historia"] || 'Historia', points: 3, status: 'Planeada', dodChecked: [], devHours: {}, qaHours: {} };
+                          parsedSprints[cleanSprintId].userStories.push(story);
+                        }
+                        story.hasQa = true;
+                        story.qaHours = {
+                          planeacion: Number(row["Planeación"] || 0), diseño: Number(row["Diseño"] || 0), ejecucion: Number(row["Ejecución"] || 0), cierre: Number(row["Cierre"] || 0), entrega: Number(row["Entrega"] || 0), regresion: Number(row["Regresión"] || 0)
+                        };
+                        const qaName = row["Asegurador Asignado"];
+                        const resObj = parsedSprints[cleanSprintId].resources.find(r => r.name.toLowerCase() === String(qaName || '').toLowerCase());
+                        if (resObj) {
+                          story.qaAssigned = resObj.id;
+                          if (!parsedSprints[cleanSprintId].qaQueues[resObj.id]) parsedSprints[cleanSprintId].qaQueues[resObj.id] = [];
+                          if (!parsedSprints[cleanSprintId].qaQueues[resObj.id].includes(id)) parsedSprints[cleanSprintId].qaQueues[resObj.id].push(id);
+                        }
+                      });
+                    }
+                  }
+                });
+
+                if (Object.keys(parsedSprints).length > 0) {
+                  setSprints(parsedSprints);
+                  const keys = Object.keys(parsedSprints);
+                  setActiveSprintId(keys[keys.length - 1]);
+                  if (parsedBacklog.length > 0) setGlobalBacklog(parsedBacklog);
+                  addLog("Base de Datos Excel (.xlsx) estructurada de 2 vías importada con éxito.");
+                  showFeedback("Base de Datos Excel importada exitosamente.", "success");
+                } else {
+                  addLog("Advertencia: No se encontraron pestañas válidas con el prefijo 'Consolidado_HUs_Sprint_X'.");
+                  showFeedback("Estructura de tablas incompatible.", "error");
+                }
+              } catch (err) {
+                addLog(`Error parseando archivo: ${err.message}`);
+                showFeedback("Error leyendo la estructura del archivo Excel.", "error");
+              }
+            };
+            reader.readAsBinaryString(file);
+          };
+
+          const handleSprintChange = (sprintId) => {
+            setActiveSprintId(sprintId);
+            showFeedback(`Cambiado al ${sprintId} correctamente`, 'success');
+          };
+
+          const createNewSprint = () => {
+            const nextSprintNum = parseInt(activeSprintId.replace('Sprint ', '')) + 1;
+            const newSprintName = `Sprint ${nextSprintNum}`;
+            const inheritedResources = activeSprint.resources.map(r => ({ ...r, exceptionStart: '' }));
+
+            const nextSprintData = {
+              id: newSprintName, start: '2026-08-17', end: '2026-09-02', holidays: [], resources: inheritedResources, userStories: [], devQueues: {}, qaQueues: {}, dodList: [...activeSprint.dodList]
+            };
+
+            setSprints(prev => ({ ...prev, [newSprintName]: nextSprintData }));
+            setActiveSprintId(newSprintName);
+            showFeedback(`¡Se ha creado el ${newSprintName} con éxito!`, 'success');
+          };
+
+          const sendToBacklog = (story) => {
+            setGlobalBacklog(prev => {
+              if (prev.some(hu => hu.id === story.id)) return prev;
+              return [...prev, {
+                id: story.id, name: story.name, points: story.points, hasDev: story.hasDev, hasQa: story.hasQa, devHours: { ...story.devHours }, qaHours: { ...story.qaHours }
+              }];
+            });
+
+            setSprints(prev => {
+              const updatedSprint = { ...prev[activeSprintId] };
+              updatedSprint.userStories = updatedSprint.userStories.filter(hu => hu.id !== story.id);
+              Object.keys(updatedSprint.devQueues).forEach(resId => {
+                updatedSprint.devQueues[resId] = updatedSprint.devQueues[resId].filter(id => id !== story.id);
+              });
+              Object.keys(updatedSprint.qaQueues).forEach(resId => {
+                updatedSprint.qaQueues[resId] = updatedSprint.qaQueues[resId].filter(id => id !== story.id);
+              });
+              return { ...prev, [activeSprintId]: updatedSprint };
+            });
+
+            showFeedback(`La HU #${story.id} se movió al Backlog Global`, 'success');
+          };
+
+          const integrateFromBacklog = (storyId) => {
+            const backlogHu = globalBacklog.find(hu => hu.id === storyId);
+            if (!backlogHu) return;
+
+            setSprints(prev => {
+              const updatedSprint = { ...prev[activeSprintId] };
+              const newSprintHu = { ...backlogHu, devAssigned: '', qaAssigned: '', status: 'Planeada', delayCategory: '', delayReason: '', dodChecked: [] };
+              updatedSprint.userStories.push(newSprintHu);
+              return { ...prev, [activeSprintId]: updatedSprint };
+            });
+
+            setGlobalBacklog(prev => prev.filter(hu => hu.id !== storyId));
+            showFeedback(`HU #${storyId} integrada al ${activeSprintId}`, 'success');
+            setActiveTab('consolidado');
+          };
+
+          const moveTaskInQueue = (resourceId, role, index, direction) => {
+            setSprints(prev => {
+              const sprint = { ...prev[activeSprintId] };
+              const isDev = role === 'DEV';
+              const queueKey = isDev ? 'devQueues' : 'qaQueues';
+              const originalQueue = sprint[queueKey]?.[resourceId] || [];
+              const updatedQueue = [...originalQueue];
+
+              if (direction === 'up' && index > 0) {
+                const temp = updatedQueue[index];
+                updatedQueue[index] = updatedQueue[index - 1];
+                updatedQueue[index - 1] = temp;
+              } else if (direction === 'down' && index < updatedQueue.length - 1) {
+                const temp = updatedQueue[index];
+                updatedQueue[index] = updatedQueue[index + 1];
+                updatedQueue[index + 1] = temp;
+              }
+
+              sprint[queueKey] = { ...(sprint[queueKey] || {}), [resourceId]: updatedQueue };
+              return { ...prev, [activeSprintId]: sprint };
+            });
+            showFeedback('Prioridad reordenada y cascada recalculada', 'success');
+          };
+
+          const handleInputChange = (field, val) => {
+            setHuForm(prev => ({ ...prev, [field]: val }));
+          };
+
+          const handleHoursChange = (group, field, val) => {
+            const numericVal = isNaN(parseFloat(val)) ? 0 : parseFloat(val);
+            setHuForm(prev => ({ ...prev, [group]: { ...prev[group], [field]: numericVal } }));
+          };
+
+          const handleOpenAddModal = () => {
+            setHuForm({ ...initialFormState, dodChecked: [] });
+            setModalMode('add');
+            setIsModalOpen(true);
+          };
+
+          const handleOpenEditModal = (hu) => {
+            setHuForm({
+              id: hu.id, name: hu.name, points: hu.points, devAssigned: hu.devAssigned || '', qaAssigned: hu.qaAssigned || '', hasDev: hu.hasDev, hasQa: hu.hasQa, status: hu.status || 'Planeada', delayCategory: hu.delayCategory || '', delayReason: hu.delayReason || '', dodChecked: hu.dodChecked || [], devHours: { ...hu.devHours }, qaHours: { ...hu.qaHours }
+            });
+            setEditingStoryId(hu.id);
+            setModalMode('edit');
+            setIsModalOpen(true);
+          };
+
+          const toggleDodItem = (storyId, item) => {
+            setSprints(prev => {
+              const sprint = { ...prev[activeSprintId] };
+              sprint.userStories = sprint.userStories.map(hu => {
+                if (hu.id !== storyId) return hu;
+                const currentChecked = hu.dodChecked || [];
+                const updatedChecked = currentChecked.includes(item) ? currentChecked.filter(i => i !== item) : [...currentChecked, item];
+                return { ...hu, dodChecked: updatedChecked };
+              });
+              return { ...prev, [activeSprintId]: sprint };
+            });
+          };
+
+          const saveUserStory = (e) => {
+            e.preventDefault();
+            if (!huForm.id.trim()) return showFeedback('ID requerido', 'error');
+            if (!huForm.name.trim()) return showFeedback('Nombre requerido', 'error');
+
+            const sprint = sprints[activeSprintId];
+            if (modalMode === 'add' && sprint.userStories.some(hu => hu.id === huForm.id)) {
+              return showFeedback(`El ID #${huForm.id} ya se encuentra asignado`, 'error');
+            }
+
+            setSprints(prev => {
+              const active = { ...prev[activeSprintId] };
+              if (modalMode === 'add') {
+                active.userStories.push(huForm);
+                if (huForm.hasDev && huForm.devAssigned) {
+                  active.devQueues[huForm.devAssigned] = [...(active.devQueues[huForm.devAssigned] || []), huForm.id];
+                }
+                if (huForm.hasQa && huForm.qaAssigned) {
+                  active.qaQueues[huForm.qaAssigned] = [...(active.qaQueues[huForm.qaAssigned] || []), huForm.id];
+                }
+              } else {
+                const oldStory = active.userStories.find(hu => hu.id === editingStoryId);
+                active.userStories = active.userStories.map(hu => hu.id === editingStoryId ? huForm : hu);
+
+                if (oldStory.devAssigned !== huForm.devAssigned || !huForm.hasDev) {
+                  if (oldStory.devAssigned) active.devQueues[oldStory.devAssigned] = (active.devQueues[oldStory.devAssigned] || []).filter(id => id !== editingStoryId);
+                  if (huForm.hasDev && huForm.devAssigned) active.devQueues[huForm.devAssigned] = [...(active.devQueues[huForm.devAssigned] || []).filter(id => id !== huForm.id), huForm.id];
+                }
+
+                if (oldStory.qaAssigned !== huForm.qaAssigned || !huForm.hasQa) {
+                  if (oldStory.qaAssigned) active.qaQueues[oldStory.qaAssigned] = (active.qaQueues[oldStory.qaAssigned] || []).filter(id => id !== editingStoryId);
+                  if (huForm.hasQa && huForm.qaAssigned) active.qaQueues[huForm.qaAssigned] = [...(active.qaQueues[huForm.qaAssigned] || []).filter(id => id !== huForm.id), huForm.id];
+                }
+              }
+              return { ...prev, [activeSprintId]: active };
+            });
+
+            setIsModalOpen(false);
+            showFeedback('Historia de usuario guardada con éxito', 'success');
+          };
+
+          const triggerDeleteConfirm = (id) => {
+            setConfirmState({
+              isOpen: true, title: 'Eliminar Historia de Usuario', message: `¿Está seguro de que desea eliminar la HU #${id}?`,
+              onConfirm: () => {
+                setSprints(prev => {
+                  const sprint = { ...prev[activeSprintId] };
+                  sprint.userStories = sprint.userStories.filter(hu => hu.id !== id);
+                  Object.keys(sprint.devQueues).forEach(key => {
+                    sprint.devQueues[key] = (sprint.devQueues[key] || []).filter(qid => qid !== id);
+                  });
+                  Object.keys(sprint.qaQueues).forEach(key => {
+                    sprint.qaQueues[key] = (sprint.qaQueues[key] || []).filter(qid => qid !== id);
+                  });
+                  return { ...prev, [activeSprintId]: sprint };
+                });
+                showFeedback('Historia de usuario eliminada', 'success');
+                setConfirmState(prev => ({ ...prev, isOpen: false }));
+              }
+            });
+          };
+
+          const triggerDiscardBacklogConfirm = (id) => {
+            setConfirmState({
+              isOpen: true, title: 'Descartar del Backlog', message: `¿Eliminar la HU #${id} del backlog?`,
+              onConfirm: () => {
+                setGlobalBacklog(prev => prev.filter(hu => hu.id !== id));
+                showFeedback('Eliminada del backlog', 'success');
+                setConfirmState(prev => ({ ...prev, isOpen: false }));
+              }
+            });
+          };
+
+          const triggerAppResetConfirm = () => {
+            setConfirmState({
+              isOpen: true, title: 'Limpiar Memoria de la App (Reset de Fábrica)', message: '¿Formatear la aplicación para un nuevo proyecto o empresa? Se eliminará todo el histórico actual del navegador de forma segura.',
+              onConfirm: () => {
+                setSprints(cleanTemplateData);
+                setActiveSprintId('Sprint 1');
+                setGlobalBacklog([]);
+                setSyncLogs([]);
+                addLog("Aplicación formateada para nuevos proyectos.");
+                showFeedback("Memoria formateada correctamente", "success");
+                setConfirmState(prev => ({ ...prev, isOpen: false }));
+              }
+            });
+          };
+
+          const copyTableToClipboard = (tableType) => {
+            let tsvContent = "";
+            if (tableType === 'consolidado') {
+              tsvContent = "ID HU\tNombre HU\tPuntos\tEstado\tDoD %\tMotivo Retraso\tFecha Entrega\n";
+              consolidatedStories.forEach(hu => {
+                tsvContent += `${hu.id}\t${hu.name}\t${hu.points}\t${hu.status}\t${hu.dodProgress}%\t${hu.delayCategory || 'N/A'}\t${hu.finalDeliveryDate}\n`;
+              });
+            } else if (tableType === 'backlog') {
+              tsvContent = "ID HU\tNombre HU\tPuntos\tEsfuerzo DEV\tEsfuerzo QA\n";
+              globalBacklog.forEach(hu => {
+                tsvContent += `${hu.id}\t${hu.name}\t${hu.points}\tRequiere DEV\tRequiere QA\n`;
+              });
+            }
+            const tempTextArea = document.createElement('textarea');
+            tempTextArea.value = tsvContent;
+            document.body.appendChild(tempTextArea);
+            tempTextArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempTextArea);
+            showFeedback('Tabla copiada en formato TSV Excel.', 'success');
+          };
+
+          return (
+            <div className="min-h-screen bg-slate-50 text-slate-800 font-sans antialiased pb-12">
+              {feedbackMessage && (
+                <div className={`fixed top-4 right-4 z-50 flex items-center gap-3 px-5 py-3 rounded-xl shadow-lg border transition-all duration-300 animate-bounce ${feedbackType === 'success' ? 'bg-emerald-500 text-white border-emerald-400' : 'bg-rose-500 text-white border-rose-400'}`}>
+                  <Icons.Check />
+                  <span className="font-medium text-sm">{feedbackMessage}</span>
+                </div>
+              )}
+
+              <header className="bg-slate-900 text-white shadow-xl">
+                <div className="max-w-7xl mx-auto px-4 py-5 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-blue-600 p-2.5 rounded-xl text-white shadow-md shadow-blue-500/20">
+                      <Icons.Database />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h1 className="text-xl font-bold tracking-tight">Capacidad Ágil & DoD Cascadas</h1>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-500 text-white flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
+                          Excel Sync En Memoria
+                        </span>
+                      </div>
+                      <p className="text-slate-400 text-xs mt-0.5">Seguimiento de DoD, Retrasos y Base de Datos Excel Unificada por Sprints</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-3 w-full md:w-auto justify-end">
+                    <button onClick={handleExportExcel} className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-lg shadow-emerald-500/10">
+                      <Icons.CloudSync /> Guardar / Descargar Excel
+                    </button>
+                    <div className="bg-slate-800/80 border border-slate-700/60 rounded-xl px-4 py-2 flex items-center gap-4 text-sm w-full md:w-auto">
+                      <div>
+                        <label className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">Sprint Activo</label>
+                        <select value={activeSprintId} onChange={(e) => handleSprintChange(e.target.value)} className="bg-slate-700 text-white font-bold rounded-lg px-2.5 py-1 text-sm focus:outline-none border border-slate-600 cursor-pointer">
+                          {Object.keys(sprints).map(id => <option key={id} value={id}>{id}</option>)}
+                        </select>
+                      </div>
+                      <div className="border-l border-slate-700 pl-4">
+                        <div className="text-xs text-slate-400">Días Hábiles</div>
+                        <div className="font-semibold text-white text-center">{sprintWorkingDays} d</div>
+                      </div>
+                    </div>
+                    <button onClick={createNewSprint} className="px-3.5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1 shadow-lg shadow-blue-500/10">
+                      <Icons.Plus /> Nuevo Sprint
+                    </button>
+                  </div>
+                </div>
+              </header>
+
+              <main className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8 space-y-8 animate-fade-in">
+                <section className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                  <div className="flex justify-between items-center mb-6">
+                    <div>
+                      <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2"><Icons.Chart /> Capacidad General en {activeSprintId}</h2>
+                      <p className="text-xs text-slate-500">Métricas en tiempo real cruzando esfuerzos estimados con días hábiles laborables</p>
+                    </div>
+                    <button onClick={() => copyTableToClipboard('consolidado')} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:text-blue-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition">
+                      <Icons.Copy /> Copiar Datos TSV
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {resourceMetrics.map(res => (
+                      <div key={res.id} className="bg-slate-50 border border-slate-200 rounded-xl p-5">
+                        <div className="flex justify-between items-start mb-3">
+                          <div>
+                            <h3 className="font-bold text-slate-800 text-base">{res.name}</h3>
+                            <span className="inline-block mt-0.5 px-2 py-0.5 text-[10px] font-bold rounded-md bg-slate-200 text-slate-700">{res.role} ({res.capacity}h/día)</span>
+                          </div>
+                          <span className={`px-2 py-1 text-xs font-semibold rounded-lg border ${res.statusColor}`}>{res.statusText}</span>
+                        </div>
+                        <div className="space-y-3 mt-4">
+                          <div>
+                            <div className="flex justify-between text-xs text-slate-500 mb-1">
+                              <span>Uso de Capacidad</span>
+                              <span className="font-semibold text-slate-800">{res.occupationPercent.toFixed(1)}%</span>
+                            </div>
+                            <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+                              <div className={`h-full rounded-full transition-all duration-500 ${res.progressColor}`} style={{ width: `${Math.min(res.occupationPercent, 100)}%` }}></div>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-3 text-center bg-white border border-slate-100 rounded-lg p-2 text-xs gap-1">
+                            <div>
+                              <div className="text-slate-400 text-[10px]">Capacidad</div>
+                              <div className="font-bold text-slate-800">{res.totalCapacityHours}h</div>
+                            </div>
+                            <div>
+                              <div className="text-slate-400 text-[10px]">Asignado</div>
+                              <div className="font-bold text-slate-800">{res.requiredHours}h</div>
+                            </div>
+                            <div>
+                              <div className="text-slate-400 text-[10px]">Balance</div>
+                              <div className={`font-bold ${res.balanceHours < 0 ? 'text-rose-600' : 'text-emerald-600'}`}>{res.balanceHours}h</div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+
+                <div className="flex flex-col sm:flex-row gap-2 border-b border-slate-200 pb-px">
+                  <button onClick={() => setActiveTab('consolidado')} className={`px-5 py-3 font-semibold text-sm rounded-t-xl transition flex items-center gap-2 ${activeTab === 'consolidado' ? 'bg-white border-t border-x border-slate-200 text-blue-600 shadow-sm' : 'text-slate-500 hover:bg-slate-100'}`}><Icons.Database /> Tablero Sprint ({consolidatedStories.length})</button>
+                  <button onClick={() => setActiveTab('dev')} className={`px-5 py-3 font-semibold text-sm rounded-t-xl transition flex items-center gap-2 ${activeTab === 'dev' ? 'bg-white border-t border-x border-slate-200 text-blue-600 shadow-sm' : 'text-slate-500 hover:bg-slate-100'}`}><Icons.User /> Desglose DEV Cascadas</button>
+                  <button onClick={() => setActiveTab('qa')} className={`px-5 py-3 font-semibold text-sm rounded-t-xl transition flex items-center gap-2 ${activeTab === 'qa' ? 'bg-white border-t border-x border-slate-200 text-blue-600 shadow-sm' : 'text-slate-500 hover:bg-slate-100'}`}><Icons.Clock /> Desglose QA Cascadas</button>
+                  <button onClick={() => setActiveTab('backlog')} className={`px-5 py-3 font-semibold text-sm rounded-t-xl transition flex items-center gap-2 ${activeTab === 'backlog' ? 'bg-white border-t border-x border-slate-200 text-blue-600 shadow-sm' : 'text-slate-500 hover:bg-slate-100'}`}><Icons.Inbox /> Backlog Rollover ({globalBacklog.length})</button>
+                  <button onClick={() => setActiveTab('sharepoint')} className={`px-5 py-3 font-semibold text-sm rounded-t-xl transition flex items-center gap-2 bg-gradient-to-r from-emerald-500/10 to-teal-500/10 ${activeTab === 'sharepoint' ? 'bg-white border-t border-x border-slate-200 text-emerald-600 shadow-sm font-bold' : 'text-emerald-700 hover:bg-emerald-50'}`}><Icons.CloudSync /> Base de Datos Excel (.xlsx)</button>
+                  <button onClick={() => setActiveTab('po')} className={`px-5 py-3 font-semibold text-sm rounded-t-xl transition flex items-center gap-2 sm:ml-auto ${activeTab === 'po' ? 'bg-white border-t border-x border-slate-200 text-blue-600 shadow-sm' : 'text-slate-500 hover:bg-slate-100'}`}><Icons.Settings /> Parámetros Globales & DoD</button>
+                </div>
+
+                {activeTab === 'sharepoint' && (
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-6">
+                      <div>
+                        <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2 text-emerald-700"><Icons.CloudSync /> Sincronización de Base de Datos Excel Unificada</h3>
+                        <p className="text-sm text-slate-500 mt-1">Cargue su archivo de planificación de SharePoint desde su PC local (con OneDrive/SharePoint Desktop Sync) para procesar e inicializar instantáneamente todo el ecosistema de Sprints.</p>
+                      </div>
+                      <div className="border-2 border-dashed border-slate-300 rounded-2xl p-8 hover:bg-slate-50 transition cursor-pointer flex flex-col items-center justify-center text-center relative">
+                        <input type="file" accept=".xlsx, .xls" onChange={handleImportExcel} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                        <div className="bg-emerald-50 text-emerald-600 p-4 rounded-full mb-3"><Icons.CloudSync /></div>
+                        <h4 className="font-bold text-slate-800 text-sm">Arrastre y suelte su archivo Excel corporativo aquí</h4>
+                        <p className="text-xs text-slate-400 mt-1 max-w-sm">Recomendado utilizar su archivo 'Planning_Database_Sprints.xlsx' para decodificar todas las tablas en un instante.</p>
+                        <span className="mt-3 px-3 py-1 bg-slate-100 hover:bg-slate-200 text-[11px] font-bold text-slate-700 rounded-lg transition">Seleccionar desde Archivos</span>
+                      </div>
+                      <div className="bg-rose-50 border border-rose-200 rounded-xl p-5 space-y-4">
+                        <div>
+                          <h4 className="font-bold text-rose-800 text-sm flex items-center gap-1.5"><Icons.AlertCircle /> Formatear y Limpiar la Aplicación (Handover Seguro)</h4>
+                          <p className="text-xs text-rose-700 mt-1">Esta opción borra instantáneamente toda la memoria de sprints, backlog y recursos locales de su navegador. Su aplicación quedará limpia para su próximo proyecto en blanco sin dejar rastro de datos anteriores.</p>
+                        </div>
+                        <button onClick={triggerAppResetConfirm} className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-lg transition shadow-md">Reset Completo / Nueva Empresa</button>
+                      </div>
+                    </div>
+                    <div className="bg-slate-900 text-slate-200 rounded-2xl shadow-sm p-6 flex flex-col h-full min-h-[300px]">
+                      <div className="border-b border-slate-800 pb-3 mb-4">
+                        <h4 className="font-bold text-sm text-slate-400 flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>Consola del Gestor de Excel</h4>
+                      </div>
+                      <div className="flex-1 overflow-y-auto space-y-1.5 font-mono text-[10px] text-emerald-400 max-h-80">
+                        {syncLogs.length === 0 ? <span className="text-slate-500 italic">Esperando acciones de lectura o escritura de datos...</span> : syncLogs.map((log, idx) => <div key={idx} className="leading-relaxed border-b border-slate-800/20 pb-1">{log}</div>)}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === 'consolidado' && (
+                  <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div>
+                        <h3 className="font-bold text-slate-900 text-lg">Control de Historias e Integración de Criterios DoD</h3>
+                        <p className="text-xs text-slate-500">Supervise el estado, avance del Definition of Done y justificación de retrasos</p>
+                      </div>
+                      <button onClick={handleOpenAddModal} className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 shadow-lg rounded-xl transition flex items-center gap-1.5"><Icons.Plus /> Agregar HU</button>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-sm border-collapse">
+                        <thead>
+                          <tr className="bg-slate-50 text-slate-500 border-b border-slate-200 text-xs font-bold uppercase">
+                            <th className="px-6 py-4">ID HU</th>
+                            <th className="px-6 py-4">Historias de Usuario</th>
+                            <th className="px-6 py-4">Estado del Sprint</th>
+                            <th className="px-6 py-4">Cumplimiento DoD</th>
+                            <th className="px-6 py-4">Cierre de Fecha Estimada</th>
+                            <th className="px-6 py-4 text-right">Acciones</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {consolidatedStories.length === 0 ? (
+                            <tr><td colSpan="6" className="px-6 py-12 text-center text-slate-400">No hay Historias de Usuario registradas para este Sprint. Utilice el Backlog Global para integrar pendientes o cree una nueva.</td></tr>
+                          ) : (
+                            consolidatedStories.map((hu) => (
+                              <tr key={hu.id} className="hover:bg-slate-50/80 transition">
+                                <td className="px-6 py-4 font-bold text-slate-950">#{hu.id}</td>
+                                <td className="px-6 py-4 max-w-xs md:max-w-md">
+                                  <span className="font-semibold text-slate-800 block truncate">{hu.name}</span>
+                                  <div className="flex gap-2 mt-1">
+                                    <span className="text-[10px] px-1.5 py-0.2 font-medium bg-slate-100 text-slate-600 rounded">{hu.points} SP</span>
+                                    {hu.delayCategory && <span className="text-[10px] px-1.5 py-0.2 font-bold bg-rose-50 text-rose-700 rounded border border-rose-100 flex items-center gap-1">⚠️ Retraso: {hu.delayCategory}</span>}
+                                  </div>
+                                  {hu.delayReason && <p className="text-[11px] text-slate-500 italic mt-1 line-clamp-1">" {hu.delayReason} "</p>}
+                                </td>
+                                <td className="px-6 py-4">
+                                  <span className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full ${hu.status === 'DoD Compliant (Done)' ? 'bg-emerald-100 text-emerald-800' : hu.status === 'Retrasada / Bloqueada' ? 'bg-rose-100 text-rose-800' : hu.status === 'En Progreso' ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-800'}`}>{hu.status}</span>
+                                </td>
+                                <td className="px-6 py-4">
+                                  <div className="space-y-1">
+                                    <div className="flex justify-between text-[11px]">
+                                      <span className="text-slate-500 font-medium">DoD: {hu.dodProgress}%</span>
+                                      <span className="text-slate-400">({(hu.dodChecked || []).length}/{activeSprint.dodList.length})</span>
+                                    </div>
+                                    <div className="w-24 bg-slate-200 rounded-full h-1.5">
+                                      <div className="bg-emerald-500 h-1.5 rounded-full" style={{ width: `${hu.dodProgress}%` }}></div>
+                                    </div>
+                                    <div className="flex flex-wrap gap-1 mt-1.5">
+                                      {activeSprint.dodList.map((item, idx) => {
+                                        const isChecked = (hu.dodChecked || []).includes(item);
+                                        return (
+                                          <button key={idx} onClick={() => toggleDodItem(hu.id, item)} className={`px-1.5 py-0.5 rounded text-[9px] font-semibold border transition ${isChecked ? 'bg-emerald-50 text-emerald-700 border-emerald-300' : 'bg-white text-slate-400 border-slate-200 hover:border-slate-300'}`}>{item}</button>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4">
+                                  <div className="text-xs">
+                                    <span className="font-semibold text-slate-900 block">{formatFriendlyDate(hu.finalDeliveryDate)}</span>
+                                    <span className="text-[10px] text-slate-400">{hu.hasQa ? 'Pasó por QA' : 'Solo DEV'}</span>
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4 text-right">
+                                  <div className="flex justify-end items-center gap-2">
+                                    <button onClick={() => handleOpenEditModal(hu)} className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-slate-100 rounded-lg transition" title="Editar"><Icons.Pencil /></button>
+                                    <button onClick={() => triggerDeleteConfirm(hu.id)} className="p-1.5 text-slate-500 hover:text-rose-600 hover:bg-slate-100 rounded-lg transition" title="Eliminar"><Icons.Trash /></button>
+                                    <button onClick={() => sendToBacklog(hu)} className="px-2.5 py-1.5 bg-slate-100 hover:bg-amber-50 text-slate-700 hover:text-amber-800 border border-slate-200 rounded-lg text-xs font-bold transition flex items-center gap-1" title="Rollover"><Icons.Inbox /> Rollover</button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === 'dev' && (
+                  <div className="space-y-6">
+                    {activeSprint.resources.filter(r => r.role === 'DEV').map(resource => {
+                      const queue = activeSprint.devQueues[resource.id] || [];
+                      const assignedStories = queue.map(id => consolidatedStories.find(hu => hu.id === id)).filter(hu => hu && hu.hasDev);
+                      return (
+                        <div key={resource.id} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                          <div className="p-6 border-b border-slate-100 bg-slate-50/40">
+                            <h4 className="font-bold text-slate-900 text-base">{resource.name}</h4>
+                            <p className="text-xs text-slate-500">Disponibilidad: <strong className="text-slate-700">{resource.capacity}h/día</strong> • Historias: <strong className="text-slate-700">{assignedStories.length}</strong></p>
+                          </div>
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-left text-sm">
+                              <thead>
+                                <tr className="bg-slate-50/50 text-slate-500 text-xs font-bold border-b border-slate-200 uppercase">
+                                  <th className="px-6 py-3 text-center w-16">Prioridad</th>
+                                  <th className="px-6 py-3">ID HU</th>
+                                  <th className="px-6 py-3">Nombre HU</th>
+                                  <th className="px-4 py-3 text-center">Análisis</th>
+                                  <th className="px-4 py-3 text-center">Diseño</th>
+                                  <th className="px-4 py-3 text-center">C. Prueba</th>
+                                  <th className="px-4 py-3 text-center">P. Unitarias</th>
+                                  <th className="px-4 py-3 text-center">Desarrollo</th>
+                                  <th className="px-4 py-3 text-center">Doc.</th>
+                                  <th className="px-6 py-3 text-center font-bold">Total DEV</th>
+                                  <th className="px-6 py-3">Fechas Estimadas</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-100">
+                                {assignedStories.length === 0 ? (
+                                  <tr><td colSpan="11" className="px-6 py-8 text-center text-slate-400">No hay historias asignadas.</td></tr>
+                                ) : (
+                                  assignedStories.map((hu, idx) => (
+                                    <tr key={hu.id}>
+                                      <td className="px-6 py-3 text-center">
+                                        <div className="flex flex-col items-center gap-0.5">
+                                          <button onClick={() => moveTaskInQueue(resource.id, 'DEV', idx, 'up')} disabled={idx === 0} className={`p-0.5 text-slate-400 rounded hover:bg-slate-100 ${idx === 0 ? 'opacity-30 cursor-not-allowed' : 'hover:text-blue-600'}`}><Icons.ChevronUp /></button>
+                                          <span className="font-bold text-slate-800 text-xs bg-slate-200/80 px-1.5 py-0.5 rounded-md">{idx + 1}</span>
+                                          <button onClick={() => moveTaskInQueue(resource.id, 'DEV', idx, 'down')} disabled={idx === assignedStories.length - 1} className={`p-0.5 text-slate-400 rounded hover:bg-slate-100 ${idx === assignedStories.length - 1 ? 'opacity-30 cursor-not-allowed' : 'hover:text-blue-600'}`}><Icons.ChevronDown /></button>
+                                        </div>
+                                      </td>
+                                      <td className="px-6 py-3 font-bold text-slate-900">#{hu.id}</td>
+                                      <td className="px-6 py-3 font-medium text-slate-700 max-w-xs truncate">{hu.name}</td>
+                                      <td className="px-4 py-3 text-center text-slate-600">{hu.devHours.analisis}h</td>
+                                      <td className="px-4 py-3 text-center text-slate-600">{hu.devHours.diseño}h</td>
+                                      <td className="px-4 py-3 text-center text-slate-600">{hu.devHours.casosPrueba}h</td>
+                                      <td className="px-4 py-3 text-center text-slate-600">{hu.devHours.pUnitarias}h</td>
+                                      <td className="px-4 py-3 text-center text-slate-600">{hu.devHours.desarrollo}h</td>
+                                      <td className="px-4 py-3 text-center text-slate-600">{hu.devHours.documentacion}h</td>
+                                      <td className="px-6 py-3 text-center font-bold text-blue-600">{hu.totalDevHours}h</td>
+                                      <td className="px-6 py-3"><div className="text-xs"><div className="font-medium text-slate-800">Fin: {formatFriendlyDate(hu.devEndDate)}</div><div className="text-[10px] text-slate-500">Inicio: {formatFriendlyDate(hu.devStartDate)}</div></div></td>
+                                    </tr>
+                                  ))
+                                )}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {activeTab === 'qa' && (
+                  <div className="space-y-6">
+                    {activeSprint.resources.filter(r => r.role === 'QA').map(resource => {
+                      const queue = activeSprint.qaQueues[resource.id] || [];
+                      const assignedStories = queue.map(id => consolidatedStories.find(hu => hu.id === id)).filter(hu => hu && hu.hasQa);
+                      return (
+                        <div key={resource.id} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                          <div className="p-6 border-b border-slate-100 bg-slate-50/40">
+                            <h4 className="font-bold text-slate-900 text-base">{resource.name}</h4>
+                            <p className="text-xs text-slate-500">Disponibilidad: <strong className="text-slate-700">{resource.capacity}h/día</strong> • Historias: <strong className="text-slate-700">{assignedStories.length}</strong></p>
+                          </div>
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-left text-sm">
+                              <thead>
+                                <tr className="bg-slate-50/50 text-slate-500 text-xs font-bold border-b border-slate-200 uppercase">
+                                  <th className="px-6 py-3 text-center w-16">Prioridad</th>
+                                  <th className="px-6 py-3">ID HU</th>
+                                  <th className="px-6 py-3">Nombre HU</th>
+                                  <th className="px-4 py-3 text-center">Planeación</th>
+                                  <th className="px-4 py-3 text-center">Diseño</th>
+                                  <th className="px-4 py-3 text-center">Ejecución</th>
+                                  <th className="px-4 py-3 text-center">Cierre</th>
+                                  <th className="px-4 py-3 text-center">Entrega</th>
+                                  <th className="px-4 py-3 text-center">Regresión</th>
+                                  <th className="px-6 py-3 text-center font-bold">Total QA</th>
+                                  <th className="px-6 py-3">Fechas Estimadas</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-100">
+                                {assignedStories.length === 0 ? (
+                                  <tr><td colSpan="11" className="px-6 py-8 text-center text-slate-400">No hay historias asignadas.</td></tr>
+                                ) : (
+                                  assignedStories.map((hu, idx) => (
+                                    <tr key={hu.id}>
+                                      <td className="px-6 py-3 text-center">
+                                        <div className="flex flex-col items-center gap-0.5">
+                                          <button onClick={() => moveTaskInQueue(resource.id, 'QA', idx, 'up')} disabled={idx === 0} className={`p-0.5 text-slate-400 rounded hover:bg-slate-100 ${idx === 0 ? 'opacity-30 cursor-not-allowed' : 'hover:text-purple-600'}`}><Icons.ChevronUp /></button>
+                                          <span className="font-bold text-slate-800 text-xs bg-slate-200/80 px-1.5 py-0.5 rounded-md">{idx + 1}</span>
+                                          <button onClick={() => moveTaskInQueue(resource.id, 'QA', idx, 'down')} disabled={idx === assignedStories.length - 1} className={`p-0.5 text-slate-400 rounded hover:bg-slate-100 ${idx === assignedStories.length - 1 ? 'opacity-30 cursor-not-allowed' : 'hover:text-purple-600'}`}><Icons.ChevronDown /></button>
+                                        </div>
+                                      </td>
+                                      <td className="px-6 py-3 font-bold text-slate-900">#{hu.id}</td>
+                                      <td className="px-6 py-3 font-medium text-slate-700 max-w-xs truncate">{hu.name}</td>
+                                      <td className="px-4 py-3 text-center text-slate-600">{hu.qaHours.planeacion}h</td>
+                                      <td className="px-4 py-3 text-center text-slate-600">{hu.qaHours.diseño}h</td>
+                                      <td className="px-4 py-3 text-center text-slate-600">{hu.qaHours.ejecucion}h</td>
+                                      <td className="px-4 py-3 text-center text-slate-600">{hu.qaHours.cierre}h</td>
+                                      <td className="px-4 py-3 text-center text-slate-600">{hu.qaHours.entrega}h</td>
+                                      <td className="px-4 py-3 text-center text-slate-600">{hu.qaHours.regresion}h</td>
+                                      <td className="px-6 py-3 text-center font-bold text-purple-600">{hu.totalQaHours}h</td>
+                                      <td className="px-6 py-3"><div className="text-xs"><div className="font-medium text-slate-800">Fin: {formatFriendlyDate(hu.qaEndDate)}</div><div className="text-[10px] text-slate-500">Inicio: {formatFriendlyDate(hu.qaStartDate)}</div></div></td>
+                                    </tr>
+                                  ))
+                                )}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {activeTab === 'backlog' && (
+                  <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-6">
+                    <div className="flex justify-between items-center border-b border-slate-100 pb-4">
+                      <div>
+                        <h3 className="font-bold text-slate-900 text-lg flex items-center gap-2"><Icons.Inbox /> Backlog de Rollovers & HUs sin Asignar</h3>
+                        <p className="text-xs text-slate-500">Repositorio global para historias de usuario de Sprints anteriores que necesitan ser re-integradas.</p>
+                      </div>
+                      <button onClick={() => copyTableToClipboard('backlog')} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:text-blue-600 bg-slate-100 rounded-lg transition"><Icons.Copy /> Exportar Backlog TSV</button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {globalBacklog.length === 0 ? (
+                        <div className="md:col-span-2 text-center py-12 text-slate-400 italic">No hay historias pendientes en el Backlog. ¡Excelente desempeño!</div>
+                      ) : (
+                        globalBacklog.map((story) => (
+                          <div key={story.id} className="border border-slate-200 bg-slate-50/50 hover:bg-slate-50 rounded-xl p-4 flex flex-col justify-between gap-4">
+                            <div>
+                              <div className="flex justify-between items-start">
+                                <span className="font-bold text-slate-950">#{story.id}</span>
+                                <span className="text-[11px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-md">Pendiente de Sprint</span>
+                              </div>
+                              <h4 className="font-bold text-slate-800 text-sm mt-1">{story.name}</h4>
+                              <p className="text-xs text-slate-500 mt-2">{story.points} SP • {story.hasDev ? 'Requiere DEV' : 'Sin DEV'} • {story.hasQa ? 'Requiere QA' : 'Sin QA'}</p>
+                            </div>
+                            <div className="flex justify-end gap-2 border-t border-slate-200/60 pt-3">
+                              <button onClick={() => triggerDiscardBacklogConfirm(story.id)} className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-slate-100 rounded-lg transition"><Icons.Trash /></button>
+                              <button onClick={() => integrateFromBacklog(story.id)} className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5"><Icons.Plus /> Planificar en {activeSprintId}</button>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === 'po' && (
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-6">
+                      <div>
+                        <h4 className="font-bold text-slate-900 text-base flex items-center gap-2"><Icons.Calendar /> Fechas de Gobernanza del Sprint</h4>
+                        <p className="text-xs text-slate-500">Configure los rangos activos para {activeSprintId}</p>
+                      </div>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Nombre/ID</label>
+                          <input type="text" value={activeSprintId} disabled className="w-full bg-slate-100 border border-slate-200 rounded-xl px-3.5 py-2 text-sm text-slate-500 cursor-not-allowed" />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Inicio</label>
+                            <input type="date" value={activeSprint.start} onChange={(e) => { const val = e.target.value; setSprints(prev => ({ ...prev, [activeSprintId]: { ...prev[activeSprintId], start: val } })); }} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none" />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Cierre</label>
+                            <input type="date" value={activeSprint.end} onChange={(e) => { const val = e.target.value; setSprints(prev => ({ ...prev, [activeSprintId]: { ...prev[activeSprintId], end: val } })); }} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none" />
+                          </div>
+                        </div>
+                        <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 flex items-center justify-between">
+                          <div>
+                            <div className="text-xs text-slate-400">Total Días de Sprint hábiles</div>
+                            <div className="text-sm font-bold text-slate-800 mt-0.5">Calculados dinámicamente</div>
+                          </div>
+                          <span className="text-2xl font-black text-blue-600 bg-blue-50 border border-blue-100 px-3.5 py-1.5 rounded-xl">{sprintWorkingDays}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-6">
+                      <div>
+                        <h4 className="font-bold text-slate-900 text-base flex items-center gap-2"><Icons.Check /> Criterios del Definition of Done (DoD)</h4>
+                        <p className="text-xs text-slate-500">Defina la lista de verificación obligatoria para este periodo</p>
+                      </div>
+                      <div className="space-y-4">
+                        <div className="flex gap-2">
+                          <input type="text" id="newDodInput" placeholder="Ej: Cobertura Unitarias > 80%" className="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none" onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              const val = e.target.value.trim();
+                              if (!val) return;
+                              setSprints(prev => { const s = { ...prev[activeSprintId] }; s.dodList = [...s.dodList, val]; return { ...prev, [activeSprintId]: s }; });
+                              e.target.value = '';
+                              showFeedback('Elemento DoD agregado', 'success');
+                            }
+                          }} />
+                          <button onClick={() => {
+                            const input = document.getElementById('newDodInput');
+                            const val = input?.value?.trim();
+                            if (!val) return;
+                            setSprints(prev => { const s = { ...prev[activeSprintId] }; s.dodList = [...s.dodList, val]; return { ...prev, [activeSprintId]: s }; });
+                            if (input) input.value = '';
+                            showFeedback('Elemento DoD agregado', 'success');
+                          }} className="px-4 py-2 bg-slate-900 text-white font-semibold text-sm rounded-xl hover:bg-slate-800 transition">Añadir</button>
+                        </div>
+                        <div className="border border-slate-100 rounded-xl max-h-56 overflow-y-auto divide-y divide-slate-100 bg-slate-50/50">
+                          {activeSprint.dodList.map((item, index) => (
+                            <div key={index} className="p-3 flex justify-between items-center">
+                              <span className="text-xs font-semibold text-slate-700">{item}</span>
+                              <button onClick={() => { setSprints(prev => { const s = { ...prev[activeSprintId] }; s.dodList = s.dodList.filter((_, idx) => idx !== index); return { ...prev, [activeSprintId]: s }; }); showFeedback('Criterio del DoD removido', 'success'); }} className="text-slate-400 hover:text-rose-600 rounded p-1 transition"><Icons.Trash /></button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-6">
+                      <div>
+                        <h4 className="font-bold text-slate-900 text-base flex items-center gap-2"><Icons.AlertCircle /> Calendario de Días Festivos</h4>
+                        <p className="text-xs text-slate-500 font-medium">Días no laborables que se restarán del cómputo</p>
+                      </div>
+                      <div className="space-y-4">
+                        <div className="flex gap-2">
+                          <input type="date" value={newHoliday} onChange={(e) => setNewHoliday(e.target.value)} className="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none" />
+                          <button onClick={() => {
+                            if (!newHoliday) return;
+                            setSprints(prev => {
+                              const s = { ...prev[activeSprintId] };
+                              if (!s.holidays.includes(newHoliday)) s.holidays = [...s.holidays, newHoliday].sort();
+                              return { ...prev, [activeSprintId]: s };
+                            });
+                            setNewHoliday('');
+                            showFeedback('Día festivo agregado', 'success');
+                          }} className="px-4 py-2 bg-slate-900 text-white font-semibold text-sm rounded-xl hover:bg-slate-800 transition">Añadir</button>
+                        </div>
+                        <div className="border border-slate-100 rounded-xl max-h-56 overflow-y-auto divide-y divide-slate-100 bg-slate-50/50">
+                          {activeSprint.holidays.length === 0 ? (
+                            <div className="p-4 text-center text-xs text-slate-400 italic">No hay festivos ingresados.</div>
+                          ) : (
+                            activeSprint.holidays.map((dateStr) => (
+                              <div key={dateStr} className="p-3 flex justify-between items-center hover:bg-slate-50">
+                                <span className="text-xs font-semibold text-slate-700">{formatFriendlyDate(dateStr)}</span>
+                                <button onClick={() => { setSprints(prev => { const s = { ...prev[activeSprintId] }; s.holidays = s.holidays.filter(d => d !== dateStr); return { ...prev, [activeSprintId]: s }; }); showFeedback('Día festivo removido', 'success'); }} className="p-1 text-slate-400 hover:text-rose-600 rounded transition"><Icons.Trash /></button>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </main>
+
+              {isModalOpen && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                  <div className="bg-white rounded-2xl shadow-2xl border border-slate-100 max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+                    <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                      <div>
+                        <h3 className="font-bold text-slate-900 text-lg">{modalMode === 'add' ? 'Nueva Historia de Usuario' : 'Editar Historia y Configuración DoD'}</h3>
+                        <p className="text-xs text-slate-500 mt-1">Configure los parámetros, horas de diseño, ejecución y auditoría de retrasos</p>
+                      </div>
+                      <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 bg-white border border-slate-200 rounded-full p-1.5 transition">✕</button>
+                    </div>
+
+                    <form onSubmit={saveUserStory} className="flex-1 overflow-y-auto p-6 space-y-6">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold uppercase text-slate-500 mb-1">ID Historia *</label>
+                          <input type="text" disabled={modalMode === 'edit'} value={huForm.id} onChange={(e) => handleInputChange('id', e.target.value.replace(/\D/g, ''))} className={`w-full border border-slate-200 rounded-xl px-3 py-2 text-sm ${modalMode === 'edit' ? 'bg-slate-100 cursor-not-allowed' : ''}`} placeholder="Ej: 5536" />
+                        </div>
+                        <div className="md:col-span-2">
+                          <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Nombre de la Historia *</label>
+                          <input type="text" value={huForm.name} onChange={(e) => handleInputChange('name', e.target.value)} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500/20" placeholder="Escriba un nombre descriptivo..." />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Puntos Story (SP)</label>
+                          <input type="number" value={huForm.points} onChange={(e) => handleInputChange('points', parseInt(e.target.value) || 0)} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none" min="1" />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Asignar DEV</label>
+                          <select value={huForm.devAssigned} onChange={(e) => handleInputChange('devAssigned', e.target.value)} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm bg-white font-medium">
+                            <option value="">Seleccione DEV...</option>
+                            {activeSprint.resources.filter(r => r.role === 'DEV').map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Asignar QA</label>
+                          <select value={huForm.qaAssigned} onChange={(e) => handleInputChange('qaAssigned', e.target.value)} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm bg-white font-medium">
+                            <option value="">Seleccione QA...</option>
+                            {activeSprint.resources.filter(r => r.role === 'QA').map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-4">
+                        <h4 className="text-xs font-bold uppercase text-slate-600 tracking-wider">Estado Actual & Auditoría DoD</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-[11px] font-bold uppercase text-slate-500 mb-1">Estado de Ejecución</label>
+                            <select value={huForm.status} onChange={(e) => handleInputChange('status', e.target.value)} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm bg-white font-medium">
+                              <option value="Planeada">Planeada</option>
+                              <option value="En Progreso">En Progreso</option>
+                              <option value="DoD Compliant (Done)">DoD Compliant (Done)</option>
+                              <option value="Retrasada / Bloqueada">Retrasada / Bloqueada</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-bold uppercase text-slate-500 mb-1">Categoría del Retraso</label>
+                            <select value={huForm.delayCategory} onChange={(e) => handleInputChange('delayCategory', e.target.value)} disabled={huForm.status !== 'Retrasada / Bloqueada'} className={`w-full border border-slate-200 rounded-xl px-3 py-2 text-sm bg-white font-medium ${huForm.status !== 'Retrasada / Bloqueada' ? 'bg-slate-100 cursor-not-allowed text-slate-400' : ''}`}>
+                              <option value="">Ninguno / Sin retraso</option>
+                              <option value="Falta DoD Codigo">Falta de DoD: Revisión de Código</option>
+                              <option value="Falta DoD Pruebas">Falta de DoD: Pruebas Unitarias o de Integración</option>
+                              <option value="Falta DoD Doc">Falta de DoD: Documentación</option>
+                              <option value="Dependencia Externa">Dependencia de Terceros o Proveedores</option>
+                              <option value="Incidencia Técnica">Incidencia Técnica / Bug Crítico</option>
+                            </select>
+                          </div>
+                        </div>
+                        {huForm.status === 'Retrasada / Bloqueada' && (
+                          <div>
+                            <label className="block text-[11px] font-bold uppercase text-slate-500 mb-1">Justificación del Retraso (Retrospectiva)</label>
+                            <textarea value={huForm.delayReason} onChange={(e) => handleInputChange('delayReason', e.target.value)} className="w-full border border-slate-200 rounded-xl p-2.5 text-xs h-16" placeholder="Describa el motivo o el criterio del DoD que impidió finalizar la historia..." />
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex gap-6 border-y border-slate-100 py-4">
+                        <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 cursor-pointer">
+                          <input type="checkbox" checked={huForm.hasDev} onChange={(e) => handleInputChange('hasDev', e.target.checked)} className="rounded text-blue-600 h-4.5 w-4.5" /> Requiere Esfuerzo DEV
+                        </label>
+                        <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 cursor-pointer">
+                          <input type="checkbox" checked={huForm.hasQa} onChange={(e) => handleInputChange('hasQa', e.target.checked)} className="rounded text-blue-600 h-4.5 w-4.5" /> Requiere Esfuerzo QA
+                        </label>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className={`p-4 rounded-xl border ${huForm.hasDev ? 'border-slate-200 bg-slate-50/50' : 'border-slate-100 bg-slate-100/50 opacity-50'}`}>
+                          <h4 className="font-bold text-sm text-slate-800 mb-4 flex items-center justify-between">
+                            <span>Desglose DEV (Horas)</span>
+                            <span className="text-xs font-bold text-blue-600">Total: {Object.values(huForm.devHours).reduce((a, b) => a + Number(b || 0), 0)}h</span>
+                          </h4>
+                          <div className="grid grid-cols-2 gap-3 text-xs">
+                            {['analisis', 'diseño', 'casosPrueba', 'pUnitarias', 'desarrollo', 'documentacion'].map(f => (
+                              <div key={f}>
+                                <label className="block text-slate-500 mb-1 capitalize">{f === 'casosPrueba' ? 'Casos Prueba' : f === 'pUnitarias' ? 'P. Unitarias' : f}</label>
+                                <input type="number" disabled={!huForm.hasDev} value={huForm.devHours[f]} onChange={(e) => handleHoursChange('devHours', f, e.target.value)} className="w-full border border-slate-200 rounded-lg p-1.5 text-center font-bold text-slate-700" />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className={`p-4 rounded-xl border ${huForm.hasQa ? 'border-slate-200 bg-slate-50/50' : 'border-slate-100 bg-slate-100/50 opacity-50'}`}>
+                          <h4 className="font-bold text-sm text-slate-800 mb-4 flex items-center justify-between">
+                            <span>Desglose QA (Horas)</span>
+                            <span className="text-xs font-bold text-purple-600">Total: {Object.values(huForm.qaHours).reduce((a, b) => a + Number(b || 0), 0)}h</span>
+                          </h4>
+                          <div className="grid grid-cols-2 gap-3 text-xs">
+                            {['planeacion', 'diseño', 'ejecucion', 'cierre', 'entrega', 'regresion'].map(f => (
+                              <div key={f}>
+                                <label className="block text-slate-500 mb-1 capitalize">{f === 'planeacion' ? 'Planeación' : f === 'regresion' ? 'Regresión' : f}</label>
+                                <input type="number" step={f === 'cierre' || f === 'entrega' ? '0.5' : '1'} disabled={!huForm.hasQa} value={huForm.qaHours[f]} onChange={(e) => handleHoursChange('qaHours', f, e.target.value)} className="w-full border border-slate-200 rounded-lg p-1.5 text-center font-bold text-slate-700" />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </form>
+
+                    <div className="p-6 border-t border-slate-100 flex justify-end gap-3 bg-slate-50">
+                      <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 border border-slate-200 hover:bg-slate-100 text-slate-700 font-semibold text-sm rounded-xl transition">Cancelar</button>
+                      <button type="submit" onClick={saveUserStory} className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm rounded-xl shadow-lg transition flex items-center gap-1"><Icons.Check /> Guardar HU</button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {confirmState.isOpen && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                  <div className="bg-white rounded-2xl shadow-2xl border border-slate-100 max-w-md w-full p-6">
+                    <div className="flex items-center gap-3 text-amber-600 mb-4">
+                      <Icons.AlertCircle />
+                      <h3 className="font-bold text-slate-900 text-lg">{confirmState.title}</h3>
+                    </div>
+                    <p className="text-sm text-slate-600 mb-6 leading-relaxed">{confirmState.message}</p>
+                    <div className="flex justify-end gap-3">
+                      <button onClick={() => setConfirmState(prev => ({ ...prev, isOpen: false }))} className="px-4 py-2 border border-slate-200 hover:bg-slate-100 text-slate-700 font-semibold text-sm rounded-xl transition">Cancelar</button>
+                      <button onClick={confirmState.onConfirm} className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-semibold text-sm rounded-xl shadow-lg transition">Confirmar</button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        }
+
+        // Renderizado del componente principal en el DOM
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
