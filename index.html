@@ -9,18 +9,17 @@
     <!-- React & ReactDOM (Librerías de Producción de React) -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-    <!-- Babel Standalone (Para compilar JSX directamente en el navegador de forma inmediata) -->
+    <!-- Babel Standalone (Compilador de JSX) -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <!-- Motor de Excel SheetJS -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     
     <style>
-        /* Animación suave para cambios de pestañas y modales */
         .animate-fade-in {
-            animation: fadeIn 0.2s ease-out forwards;
+            animation: fadeIn 0.25s ease-out forwards;
         }
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(4px); }
+            from { opacity: 0; transform: translateY(6px); }
             to { opacity: 1; transform: translateY(0); }
         }
     </style>
@@ -30,9 +29,9 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        // Extraemos Hooks de React expuestos en el ámbito global por el script de producción
         const { useState, useMemo, useEffect } = React;
 
+        // Íconos SVG robustos para la interfaz
         const Icons = {
           Calendar: () => (
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -115,74 +114,16 @@
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0a2 2 0 01-2 2H6a2 2 0 01-2-2m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
             </svg>
+          ),
+          FileExcel: () => (
+            <svg className="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
           )
         };
 
-        const cleanTemplateData = {
-          'Sprint 1': {
-            id: 'Sprint 1',
-            start: '2026-07-27',
-            end: '2026-08-12',
-            holidays: [],
-            resources: [
-              { id: '1', name: 'Desarrollador 1', role: 'DEV', capacity: 8, exceptionStart: '' },
-              { id: '2', name: 'Desarrollador 2', role: 'DEV', capacity: 8, exceptionStart: '' },
-              { id: '3', name: 'QA 1', role: 'QA', capacity: 4, exceptionStart: '' }
-            ],
-            userStories: [],
-            devQueues: {},
-            qaQueues: {},
-            dodList: ['Código aprobado', 'Unitarias > 80%', 'Pruebas QA OK', 'Manual Técnico']
-          }
-        };
-
-        const initialSprintsData = {
-          'Sprint 58': {
-            id: 'Sprint 58',
-            start: '2026-07-06',
-            end: '2026-07-22',
-            holidays: ['2026-07-20'],
-            resources: [
-              { id: '1', name: 'Briyith Castaño', role: 'DEV', capacity: 8, exceptionStart: '' },
-              { id: '2', name: 'Luis Oviedo', role: 'DEV', capacity: 8, exceptionStart: '' },
-              { id: '3', name: 'Jordan Reyes', role: 'QA', capacity: 4, exceptionStart: '' }
-            ],
-            userStories: [
-              {
-                id: '5410',
-                name: 'Sincronización Automática SharePoint (Planning-Sprint 58.xlsx)',
-                points: 5,
-                devAssigned: '1',
-                qaAssigned: '3',
-                hasDev: true,
-                hasQa: true,
-                status: 'DoD Compliant (Done)',
-                delayCategory: '',
-                delayReason: '',
-                dodChecked: ['Código aprobado', 'Unitarias > 80%', 'Pruebas QA OK'],
-                devHours: { analisis: 2, diseño: 1, casosPrueba: 2, pUnitarias: 2, desarrollo: 12, documentacion: 2 },
-                qaHours: { planeacion: 1, diseño: 2, ejecucion: 4, cierre: 0.5, entrega: 0.5, regresion: 0 }
-              },
-              {
-                id: '5411',
-                name: 'Reporte Consolidado de Balance de Capacidades',
-                points: 8,
-                devAssigned: '2',
-                qaAssigned: '3',
-                hasDev: true,
-                hasQa: true,
-                status: 'Retrasada / Bloqueada',
-                delayCategory: 'Falta DoD Pruebas',
-                delayReason: 'El despliegue de pruebas falló en el pipeline de Integración Continua.',
-                dodChecked: ['Código aprobado', 'Unitarias > 80%'],
-                devHours: { analisis: 2, diseño: 2, casosPrueba: 2, pUnitarias: 2, desarrollo: 20, documentacion: 4 },
-                qaHours: { planeacion: 2, diseño: 2, ejecucion: 8, cierre: 0.5, entrega: 0.5, regresion: 2 }
-              }
-            ],
-            devQueues: { '1': ['5410'], '2': ['5411'] },
-            qaQueues: { '3': ['5410', '5411'] },
-            dodList: ['Código aprobado', 'Unitarias > 80%', 'Pruebas QA OK', 'Manual Técnico']
-          },
+        // Escenario Demo precargado en caso de que quieran explorar sin cargar un archivo inmediatamente
+        const demoSprintsData = {
           'Sprint 59': {
             id: 'Sprint 59',
             start: '2026-07-27',
@@ -196,7 +137,7 @@
             userStories: [
               {
                 id: '5536',
-                name: 'Automatización de Tareas Paralelas (Planning-Sprint 59.xlsx)',
+                name: 'Automatización de Tareas Paralelas',
                 points: 13,
                 devAssigned: '1',
                 qaAssigned: '3',
@@ -238,115 +179,45 @@
                 dodChecked: [],
                 devHours: { analisis: 2, diseño: 2, casosPrueba: 3, pUnitarias: 2, desarrollo: 20, documentacion: 4 },
                 qaHours: { planeacion: 0, diseño: 0, ejecucion: 0, cierre: 0, entrega: 0, regresion: 0 }
-              },
-              {
-                id: '4520',
-                name: 'Auto-asignación Rol Portal a Contactos CRM',
-                points: 5,
-                devAssigned: '2',
-                qaAssigned: '',
-                hasDev: true,
-                hasQa: false,
-                status: 'Planeada',
-                delayCategory: '',
-                delayReason: '',
-                dodChecked: [],
-                devHours: { analisis: 1, diseño: 1, casosPrueba: 2, pUnitarias: 2, desarrollo: 20, documentacion: 2 },
-                qaHours: { planeacion: 0, diseño: 0, ejecucion: 0, cierre: 0, entrega: 0, regresion: 0 }
-              },
-              {
-                id: '5509',
-                name: '[CSM] Métricas Base de Navegación',
-                points: 3,
-                devAssigned: '1',
-                qaAssigned: '',
-                hasDev: true,
-                hasQa: false,
-                status: 'En Progreso',
-                delayCategory: '',
-                delayReason: '',
-                dodChecked: ['Código aprobado', 'Unitarias > 80%'],
-                devHours: { analisis: 0, diseño: 1, casosPrueba: 1, pUnitarias: 2, desarrollo: 10, documentacion: 2 },
-                qaHours: { planeacion: 0, diseño: 0, ejecucion: 0, cierre: 0, entrega: 0, regresion: 0 }
-              },
-              {
-                id: '5722',
-                name: '[CSM] Visibilidad y Acceso Seguro al Módulo UEA',
-                points: 8,
-                devAssigned: '1',
-                qaAssigned: '',
-                hasDev: true,
-                hasQa: false,
-                status: 'Planeada',
-                delayCategory: '',
-                delayReason: '',
-                dodChecked: [],
-                devHours: { analisis: 2, diseño: 2, casosPrueba: 3, pUnitarias: 3, desarrollo: 28, documentacion: 4 },
-                qaHours: { planeacion: 0, diseño: 0, ejecucion: 0, cierre: 0, entrega: 0, regresion: 0 }
-              },
-              {
-                id: '5522',
-                name: 'Checks de Liberación en Programación',
-                points: 5,
-                devAssigned: '',
-                qaAssigned: '3',
-                hasDev: false,
-                hasQa: true,
-                status: 'Planeada',
-                delayCategory: '',
-                delayReason: '',
-                dodChecked: [],
-                devHours: { analisis: 0, diseño: 0, casosPrueba: 0, pUnitarias: 0, desarrollo: 0, documentacion: 0 },
-                qaHours: { planeacion: 2, diseño: 2, ejecucion: 9, cierre: 0.5, entrega: 0.5, regresion: 0 }
-              },
-              {
-                id: '4204',
-                name: 'Ajuste de Alertas Periódicas y Parámetros',
-                points: 5,
-                devAssigned: '',
-                qaAssigned: '3',
-                hasDev: false,
-                hasQa: true,
-                status: 'Planeada',
-                delayCategory: '',
-                delayReason: '',
-                dodChecked: [],
-                devHours: { analisis: 0, diseño: 0, casosPrueba: 0, pUnitarias: 0, desarrollo: 0, documentacion: 0 },
-                qaHours: { planeacion: 2, diseño: 2, ejecucion: 10, cierre: 0.5, entrega: 0.5, regresion: 0 }
               }
             ],
-            devQueues: {
-              '1': ['5536', '5509', '5722'],
-              '2': ['5537', '5727', '4520']
-            },
-            qaQueues: {
-              '3': ['5522', '4204', '5536']
-            },
+            devQueues: { '1': ['5536'], '2': ['5537', '5727'] },
+            qaQueues: { '3': ['5536'] },
             dodList: ['Código aprobado', 'Unitarias > 80%', 'Pruebas QA OK', 'Manual Técnico']
           }
         };
 
+        const initialFormState = {
+          id: '',
+          name: '',
+          points: 3,
+          devAssigned: '',
+          qaAssigned: '',
+          hasDev: true,
+          hasQa: false,
+          status: 'Planeada',
+          delayCategory: '',
+          delayReason: '',
+          dodChecked: [],
+          devHours: { analisis: 0, diseño: 0, casosPrueba: 0, pUnitarias: 0, desarrollo: 0, documentacion: 0 },
+          qaHours: { planeacion: 0, diseño: 0, ejecucion: 0, cierre: 0, entrega: 0, regresion: 0 }
+        };
+
         function App() {
-          const [sprints, setSprints] = useState(initialSprintsData);
-          const [activeSprintId, setActiveSprintId] = useState('Sprint 59');
+          const [sprints, setSprints] = useState(() => {
+            const saved = localStorage.getItem('SP_PLANNING_PORTAL_STATE');
+            return saved ? JSON.parse(saved) : null; // Iniciamos en NULL para forzar la pantalla de carga limpia de Excel
+          });
+
+          const [activeSprintId, setActiveSprintId] = useState(() => {
+            const savedSprint = localStorage.getItem('SP_PLANNING_PORTAL_ACTIVE_ID');
+            return savedSprint || 'Sprint 59';
+          });
+
           const [newHoliday, setNewHoliday] = useState('');
           const [confirmState, setConfirmState] = useState({ isOpen: false, title: '', message: '', onConfirm: null });
-          const [globalBacklog, setGlobalBacklog] = useState([
-            {
-              id: '9901',
-              name: 'HU Arrastrada de Sprint 57 - Migración Core BD',
-              points: 13,
-              hasDev: true,
-              hasQa: true,
-              devHours: { analisis: 4, diseño: 4, casosPrueba: 4, pUnitarias: 4, desarrollo: 32, documentacion: 8 },
-              qaHours: { planeacion: 4, diseño: 4, ejecucion: 16, cierre: 2, entrega: 2, regresion: 8 }
-            }
-          ]);
-
-          const activeSprint = useMemo(() => sprints[activeSprintId] || {
-            id: activeSprintId, start: '2026-07-27', end: '2026-08-12', holidays: [], resources: [], userStories: [], devQueues: {}, qaQueues: {}, dodList: []
-          }, [sprints, activeSprintId]);
-
+          const [globalBacklog, setGlobalBacklog] = useState([]);
+          const [huForm, setHuForm] = useState(initialFormState);
           const [activeTab, setActiveTab] = useState('consolidado'); 
           const [isModalOpen, setIsModalOpen] = useState(false);
           const [modalMode, setModalMode] = useState('add'); 
@@ -354,12 +225,41 @@
           const [feedbackMessage, setFeedbackMessage] = useState(null);
           const [feedbackType, setFeedbackType] = useState('success');
           const [syncLogs, setSyncLogs] = useState([]);
+          
+          // API de Acceso a Archivo Local Directo (File System Access API)
+          const [fileHandle, setFileHandle] = useState(null);
+          const [fileNameLinked, setFileNameLinked] = useState('');
+
+          useEffect(() => {
+            if (sprints) {
+              localStorage.setItem('SP_PLANNING_PORTAL_STATE', JSON.stringify(sprints));
+              localStorage.setItem('SP_PLANNING_PORTAL_ACTIVE_ID', activeSprintId);
+            } else {
+              localStorage.removeItem('SP_PLANNING_PORTAL_STATE');
+            }
+          }, [sprints, activeSprintId]);
 
           const addLog = (msg) => {
             const time = new Date().toLocaleTimeString();
             setSyncLogs(prev => [`[${time}] ${msg}`, ...prev.slice(0, 49)]);
           };
 
+          const showFeedback = (msg, type = 'success') => {
+            setFeedbackMessage(msg);
+            setFeedbackType(type);
+            setTimeout(() => setFeedbackMessage(null), 3500);
+          };
+
+          const activeSprint = useMemo(() => {
+            if (!sprints || !sprints[activeSprintId]) {
+              return {
+                id: activeSprintId, start: '2026-07-27', end: '2026-08-12', holidays: [], resources: [], userStories: [], devQueues: {}, qaQueues: {}, dodList: []
+              };
+            }
+            return sprints[activeSprintId];
+          }, [sprints, activeSprintId]);
+
+          // --- CALCULADOR DE CASCADA SECUENCIAL Y GOBERNANZA ---
           const isBusinessDay = (date, holidayList) => {
             const day = date.getDay(); 
             if (day === 0 || day === 6) return false;
@@ -509,7 +409,7 @@
 
               let statusText = 'Con disponibilidad';
               let statusColor = 'bg-emerald-100 text-emerald-800 border-emerald-300';
-              let progressColor = 'bg-emerald-500';
+              let progressColor = 'bg-emerald-50500';
 
               if (occupationPercent === 100) {
                 statusText = 'Al límite (0 dispo)';
@@ -534,239 +434,420 @@
             });
           }, [activeSprint, consolidatedStories, sprintWorkingDays]);
 
-          const getResourceMetricsForSprint = (sprintId) => {
-            const sprint = sprints[sprintId];
-            if (!sprint) return [];
-            let start = new Date(sprint.start + 'T00:00:00');
-            let end = new Date(sprint.end + 'T00:00:00');
-            let workingDays = 0;
-            if (!(isNaN(start) || isNaN(end) || start > end)) {
-              let current = new Date(start);
-              while (current <= end) {
-                if (isBusinessDay(current, sprint.holidays)) workingDays++;
-                current.setDate(current.getDate() + 1);
-              }
-            }
+          // --- MOTOR DE PARSING CORPORATIVO AVANZADO DE EXCEL (.XLSX) ---
+          const parseWorkbookData = (workbook, originName = 'Excel') => {
+            try {
+              const parsedSprints = {};
+              let activeId = 'Sprint 59';
 
-            return sprint.resources.map(res => {
-              const isDev = res.role === 'DEV';
-              const totalCapacity = workingDays * res.capacity;
-              let reqHours = 0;
-              sprint.userStories.forEach(hu => {
-                if (isDev && hu.hasDev && hu.devAssigned === res.id) {
-                  reqHours += Object.values(hu.devHours).reduce((a, b) => a + Number(b || 0), 0);
-                } else if (!isDev && hu.hasQa && hu.qaAssigned === res.id) {
-                  reqHours += Object.values(hu.qaHours).reduce((a, b) => a + Number(b || 0), 0);
+              // Encontrar la pestaña de Historias (HUs Sprint XX)
+              let huSheetName = workbook.SheetNames.find(n => n.toLowerCase().includes('hus sprint') || n.toLowerCase().includes('hu'));
+              let capSheetName = workbook.SheetNames.find(n => n.toLowerCase().includes('capacidad') || n.toLowerCase().includes('balance'));
+              let devSheetName = workbook.SheetNames.find(n => n.toLowerCase().includes('horas dev') || n.toLowerCase().includes('dev'));
+              let qaSheetName = workbook.SheetNames.find(n => n.toLowerCase().includes('horas qa') || n.toLowerCase().includes('qa'));
+
+              if (!huSheetName) {
+                // Buscamos cualquier sheet para deducir Sprint
+                huSheetName = workbook.SheetNames[0];
+              }
+
+              const sprintMatch = huSheetName.match(/Sprint\s*(\d+)/i);
+              if (sprintMatch) {
+                activeId = `Sprint ${sprintMatch[1]}`;
+              }
+
+              // Estructura limpia inicial
+              parsedSprints[activeId] = {
+                id: activeId,
+                start: '2026-07-27',
+                end: '2026-08-12',
+                holidays: [],
+                resources: [
+                  { id: '1', name: 'Briyith Castaño', role: 'DEV', capacity: 8, exceptionStart: '' },
+                  { id: '2', name: 'Luis Oviedo', role: 'DEV', capacity: 8, exceptionStart: '' },
+                  { id: '3', name: 'Jordan Reyes', role: 'QA', capacity: 4, exceptionStart: '' }
+                ],
+                userStories: [],
+                devQueues: {},
+                qaQueues: {},
+                dodList: ['Código aprobado', 'Unitarias > 80%', 'Pruebas QA OK', 'Manual Técnico']
+              };
+
+              const active = parsedSprints[activeId];
+
+              // 1. Parsear Capacidad-Balance & Parámetros
+              if (capSheetName) {
+                const sheet = workbook.Sheets[capSheetName];
+                const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+                
+                let foundDev = false;
+                let foundQa = false;
+                const resourcesList = [];
+
+                rows.forEach((row, idx) => {
+                  if (!row || row.length === 0) return;
+                  const rowStr = row.map(cell => String(cell || '').trim());
+
+                  // Detectar Fechas
+                  if (rowStr[0]?.toLowerCase().includes('inicio')) {
+                    const cellVal = row[1];
+                    if (cellVal) active.start = parseExcelDate(cellVal);
+                  }
+                  if (rowStr[0]?.toLowerCase().includes('fin')) {
+                    const cellVal = row[1];
+                    if (cellVal) active.end = parseExcelDate(cellVal);
+                  }
+                  // Detectar Festivos
+                  if (rowStr[0]?.toLowerCase().includes('dia festivo') || rowStr[0]?.toLowerCase().includes('día festivo')) {
+                    const cellVal = row[1];
+                    if (cellVal) {
+                      const parsedHoli = parseExcelDate(cellVal);
+                      if (!active.holidays.includes(parsedHoli)) active.holidays.push(parsedHoli);
+                    }
+                  }
+
+                  // Detectar Tabla de Recursos de Desarrollo
+                  if (rowStr[0]?.toLowerCase().includes('desarrollo')) {
+                    foundDev = true; foundQa = false; return;
+                  }
+                  // Detectar Tabla de Recursos de Aseguramiento
+                  if (rowStr[0]?.toLowerCase().includes('aseguramiento')) {
+                    foundQa = true; foundDev = false; return;
+                  }
+
+                  // Parsear filas de recursos
+                  if (foundDev || foundQa) {
+                    const colNum = parseInt(rowStr[0]);
+                    if (!isNaN(colNum)) {
+                      const name = rowStr[1];
+                      const cap = parseFloat(rowStr[2]) || 8;
+                      const role = foundDev ? 'DEV' : 'QA';
+                      const id = String(colNum + (foundQa ? 10 : 0)); // Evitar colisiones de IDs
+
+                      resourcesList.push({
+                        id, name, role, capacity: role === 'DEV' ? 8 : 4, exceptionStart: ''
+                      });
+                    }
+                  }
+                });
+
+                if (resourcesList.length > 0) {
+                  active.resources = resourcesList;
+                }
+              }
+
+              // 2. Parsear Historias de Usuario (HUs)
+              if (huSheetName) {
+                const sheet = workbook.Sheets[huSheetName];
+                const rows = XLSX.utils.sheet_to_json(sheet);
+
+                rows.forEach(row => {
+                  const id = String(row['ID HU'] || '').trim();
+                  if (!id || id.toLowerCase().includes('total') || id.toLowerCase().includes('orden')) return;
+
+                  const name = row['Nombres de HU'] || row['Historia de Usuario'] || 'Historia de Usuario';
+                  const points = parseInt(row['Puntos'] || row['Puntos SP']) || 3;
+                  const personAssigned = String(row['Persona asignada'] || '');
+                  const status = row['Estado actual'] || row['Estado Sprint'] || 'Planeada';
+
+                  const hasDev = personAssigned.toUpperCase().includes('Briyith') || personAssigned.toUpperCase().includes('Luis') || !personAssigned.toUpperCase().includes('Jordan');
+                  const hasQa = personAssigned.toUpperCase().includes('Jordan') || personAssigned.toUpperCase().includes('/');
+
+                  active.userStories.push({
+                    id,
+                    name,
+                    points,
+                    devAssigned: personAssigned.toUpperCase().includes('BRIYITH') ? '1' : personAssigned.toUpperCase().includes('LUIS') ? '2' : '',
+                    qaAssigned: personAssigned.toUpperCase().includes('JORDAN') ? '3' : '',
+                    hasDev,
+                    hasQa,
+                    status,
+                    delayCategory: '',
+                    delayReason: '',
+                    dodChecked: [],
+                    devHours: { analisis: 0, diseño: 0, casosPrueba: 0, pUnitarias: 0, desarrollo: 0, documentacion: 0 },
+                    qaHours: { planeacion: 0, diseño: 0, ejecucion: 0, cierre: 0, entrega: 0, regresion: 0 }
+                  });
+                });
+              }
+
+              // 3. Parsear Horas DEV desglosadas
+              if (devSheetName) {
+                const sheet = workbook.Sheets[devSheetName];
+                const rows = XLSX.utils.sheet_to_json(sheet);
+                rows.forEach(row => {
+                  const id = String(row['ID HU'] || '').trim();
+                  const story = active.userStories.find(h => h.id === id);
+                  if (story) {
+                    story.hasDev = true;
+                    story.devHours = {
+                      analisis: parseFloat(row['Análisis'] || row['Analisis']) || 0,
+                      diseño: parseFloat(row['Diseño'] || row['Diseno']) || 0,
+                      casosPrueba: parseFloat(row['Casos Prueba'] || row['Casos de Prueba']) || 0,
+                      pUnitarias: parseFloat(row['P. Unitarias'] || row['Pruebas Unitarias']) || 0,
+                      desarrollo: parseFloat(row['Desarrollo']) || 0,
+                      documentacion: parseFloat(row['Documentación'] || row['Documentacion']) || 0
+                    };
+                  }
+                });
+              }
+
+              // 4. Parsear Horas QA desglosadas
+              if (qaSheetName) {
+                const sheet = workbook.Sheets[qaSheetName];
+                const rows = XLSX.utils.sheet_to_json(sheet);
+                rows.forEach(row => {
+                  const id = String(row['ID HU'] || '').trim();
+                  const story = active.userStories.find(h => h.id === id);
+                  if (story) {
+                    story.hasQa = true;
+                    story.qaHours = {
+                      planeacion: parseFloat(row['Planeación'] || row['Planeacion']) || 0,
+                      diseño: parseFloat(row['Diseño'] || row['Diseno']) || 0,
+                      ejecucion: parseFloat(row['Ejecución'] || row['Ejecucion']) || 0,
+                      cierre: parseFloat(row['Cierre']) || 0,
+                      entrega: parseFloat(row['Entrega']) || 0,
+                      regresion: parseFloat(row['Regresion'] || row['Regresión']) || 0
+                    };
+                  }
+                });
+              }
+
+              // Reconstruir colas de prioridades iniciales
+              const dev1Queue = [];
+              const dev2Queue = [];
+              const qaQueue = [];
+
+              active.userStories.forEach(story => {
+                if (story.hasDev) {
+                  if (story.devAssigned === '1') dev1Queue.push(story.id);
+                  else if (story.devAssigned === '2') dev2Queue.push(story.id);
+                }
+                if (story.hasQa && story.qaAssigned === '3') {
+                  qaQueue.push(story.id);
                 }
               });
 
-              return {
-                name: res.name, role: res.role, capacity: res.capacity, totalCapacityHours: totalCapacity, requiredHours: reqHours, balanceHours: totalCapacity - reqHours,
-                occupationPercent: totalCapacity > 0 ? (reqHours / totalCapacity) * 100 : 0, statusText: (reqHours / totalCapacity) * 100 > 100 ? 'Sobrecargado' : (reqHours / totalCapacity) * 100 === 100 ? 'Al límite' : 'Disponible'
-              };
-            });
+              active.devQueues = { '1': dev1Queue, '2': dev2Queue };
+              active.qaQueues = { '3': qaQueue };
+
+              setSprints(parsedSprints);
+              setActiveSprintId(activeId);
+              addLog(`¡Base de Datos de '${originName}' parseada correctamente de 4 vías!`);
+              showFeedback(`Se cargó exitosamente el escenario de ${activeId}`, 'success');
+
+            } catch (err) {
+              console.error(err);
+              addLog(`Error al estructurar el Excel: ${err.message}`);
+              showFeedback("Error leyendo estructura de celdas", "error");
+            }
           };
 
-          const showFeedback = (msg, type = 'success') => {
-            setFeedbackMessage(msg);
-            setFeedbackType(type);
-            setTimeout(() => setFeedbackMessage(null), 3500);
+          const parseExcelDate = (excelVal) => {
+            if (!excelVal) return '';
+            if (excelVal instanceof Date) {
+              return excelVal.toISOString().split('T')[0];
+            }
+            if (typeof excelVal === 'number') {
+              // Convertir fecha serializada de Excel a ISO
+              const date = new Date(Date.UTC(0, 0, excelVal - 1));
+              return date.toISOString().split('T')[0];
+            }
+            const cleanStr = String(excelVal).trim();
+            const match = cleanStr.match(/(\d{4})[-/](\d{2})[-/](\d{2})/);
+            if (match) return `${match[1]}-${match[2]}-${match[3]}`;
+            return cleanStr;
           };
 
-          const handleExportExcel = () => {
-            if (!window.XLSX) {
-              showFeedback("Motor de Excel en proceso de carga. Reintente en un momento.", "error");
+          // --- GESTIÓN DE ARCHIVOS DIRECTO (FILE SYSTEM ACCESS API) ---
+          const handleLinkLocalExcel = async () => {
+            if (!window.showOpenFilePicker) {
+              addLog("Su navegador no soporta el Acceso Directo a Archivos. Use la opción de Arrastre Manual.");
+              showFeedback("Función no soportada en Safari/Firefox. Use Chrome o Edge.", "error");
               return;
             }
 
             try {
-              addLog("Iniciando exportación de Base de Datos Excel...");
-              const wb = window.XLSX.utils.book_new();
-
-              Object.keys(sprints).forEach(sprintId => {
-                const sprint = sprints[sprintId];
-                const sprintTag = sprintId.replace(/\s+/g, '_');
-
-                const capMetrics = getResourceMetricsForSprint(sprintId);
-                const capData = capMetrics.map(r => ({
-                  "Nombre": r.name, "Rol": r.role, "Horas Disponibles por Día": r.capacity, "Capacidad Disponible Total (H)": r.totalCapacityHours, "Horas Requeridas Asignadas": r.requiredHours, "Balance Horas Remanentes": r.balanceHours, "Ocupación %": `${r.occupationPercent.toFixed(1)}%`, "Estado de Ocupación": r.statusText
-                }));
-                const wsCap = window.XLSX.utils.json_to_sheet(capData);
-                window.XLSX.utils.book_append_sheet(wb, wsCap, `Capacidad-Balance_${sprintTag}`);
-
-                const devData = sprint.userStories.filter(h => h.hasDev).map(h => {
-                  const totalDev = Object.values(h.devHours).reduce((a, b) => a + Number(b || 0), 0);
-                  return {
-                    "ID HU": h.id, "Historia": h.name, "Desarrollador Asignado": sprint.resources.find(r => r.id === h.devAssigned)?.name || 'Sin Asignar', "Análisis": h.devHours.analisis, "Diseño": h.devHours.diseño, "Casos Prueba": h.devHours.casosPrueba, "P. Unitarias": h.devHours.pUnitarias, "Desarrollo": h.devHours.desarrollo, "Documentación": h.devHours.documentacion, "Total DEV (Horas)": totalDev
-                  };
-                });
-                const wsDev = window.XLSX.utils.json_to_sheet(devData);
-                window.XLSX.utils.book_append_sheet(wb, wsDev, `Horas_DEV_${sprintTag}`);
-
-                const qaData = sprint.userStories.filter(h => h.hasQa).map(h => {
-                  const totalQa = Object.values(h.qaHours).reduce((a, b) => a + Number(b || 0), 0);
-                  return {
-                    "ID HU": h.id, "Historia": h.name, "Asegurador Asignado": sprint.resources.find(r => r.id === h.qaAssigned)?.name || 'Sin Asignar', "Planeación": h.qaHours.planeacion, "Diseño": h.qaHours.diseño, "Ejecución": h.qaHours.ejecucion, "Cierre": h.qaHours.cierre, "Entrega": h.qaHours.entrega, "Regresión": h.qaHours.regresion, "Total QA (Horas)": totalQa
-                  };
-                });
-                const wsQa = window.XLSX.utils.json_to_sheet(qaData);
-                window.XLSX.utils.book_append_sheet(wb, wsQa, `Horas_QA_${sprintTag}`);
-
-                const consData = sprint.userStories.map(h => {
-                  const totalDev = h.hasDev ? Object.values(h.devHours).reduce((a, b) => a + Number(b || 0), 0) : 0;
-                  const totalQa = h.hasQa ? Object.values(h.qaHours).reduce((a, b) => a + Number(b || 0), 0) : 0;
-                  const checkedCount = (h.dodChecked || []).length;
-                  const totalDod = sprint.dodList.length;
-                  const progress = totalDod > 0 ? Math.round((checkedCount / totalDod) * 100) : 0;
-
-                  return {
-                    "ID HU": h.id, "Historia de Usuario": h.name, "Puntos SP": h.points, "Estado Sprint": h.status || 'Planeada', "DoD Porcentaje Cumplido": `${progress}%`, "DoD Criterios Cumplidos": (h.dodChecked || []).join(', '), "Categoría de Retraso": h.delayCategory || '', "Motivo / Comentarios Retraso": h.delayReason || '', "Total Horas Estimadas": totalDev + totalQa
-                  };
-                });
-                const wsCons = window.XLSX.utils.json_to_sheet(consData);
-                window.XLSX.utils.book_append_sheet(wb, wsCons, `Consolidado_HUs_${sprintTag}`);
+              const [handle] = await window.showOpenFilePicker({
+                types: [{
+                  description: 'Archivos de Planeación Ágil (.xlsx)',
+                  accept: { 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'] }
+                }],
+                excludeAcceptAllOption: true,
+                multiple: false
               });
 
-              const backData = globalBacklog.map(h => ({
-                "ID HU": h.id, "Historia de Usuario": h.name, "Puntos SP": h.points, "Esfuerzo DEV": h.hasDev ? "Sí" : "No", "Esfuerzo QA": h.hasQa ? "Sí" : "No"
-              }));
-              const wsBack = window.XLSX.utils.json_to_sheet(backData);
-              window.XLSX.utils.book_append_sheet(wb, wsBack, `Backlog_Rollover_Pendientes`);
+              setFileHandle(handle);
+              setFileNameLinked(handle.name);
+              addLog(`Vínculo de flujo directo activo: ${handle.name}`);
 
-              window.XLSX.writeFile(wb, `Planning_Database_Sprints.xlsx`);
-              addLog("¡Base de datos generada exitosamente como 'Planning_Database_Sprints.xlsx'!");
-              showFeedback("Base de Datos Excel descargada. Sobrescribe tu archivo en SharePoint.", "success");
+              const file = await handle.getFile();
+              const reader = new FileReader();
+              reader.onload = (e) => {
+                const workbook = XLSX.read(e.target.result, { type: 'binary', cellDates: true });
+                parseWorkbookData(workbook, handle.name);
+              };
+              reader.readAsBinaryString(file);
+
             } catch (err) {
-              addLog(`Error exportando Excel: ${err.message}`);
-              showFeedback("Ocurrió un error al generar el archivo Excel.", "error");
+              addLog(`Vinculación cancelada o fallida: ${err.message}`);
             }
           };
 
-          const handleImportExcel = (e) => {
-            const file = e.target.files[0];
+          // Sobrescribe directamente el archivo local vinculado sin descargar duplicados
+          const handleDirectSyncSave = async () => {
+            if (!fileHandle) {
+              showFeedback("No hay ningún archivo de SharePoint vinculado. Descargue manualmente.", "error");
+              return;
+            }
+
+            try {
+              addLog("Generando nueva estructura binaria de sobrescritura...");
+              const blob = generateExcelBlob();
+
+              const writable = await fileHandle.createWritable();
+              await writable.write(blob);
+              await writable.close();
+
+              addLog(`🟢 Sincronizado: '${fileHandle.name}' actualizado directamente. OneDrive subirá el cambio.`);
+              showFeedback("¡Archivo local actualizado y sincronizado!", "success");
+            } catch (err) {
+              addLog(`Error de escritura directa: ${err.message}`);
+              showFeedback("Permiso de escritura denegado en el archivo local", "error");
+            }
+          };
+
+          // --- FLUJO ALTERNATIVO DE DESCARGA ---
+          const handleDownloadBackup = () => {
+            try {
+              const blob = generateExcelBlob();
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `Planning_Database_${activeSprintId}.xlsx`;
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+              URL.revokeObjectURL(url);
+              
+              addLog("Copia de descarga manual generada correctamente.");
+              showFeedback("Plantilla descargada. Reemplace en su carpeta OneDrive.", "success");
+            } catch (err) {
+              showFeedback("Fallo de exportación manual", "error");
+            }
+          };
+
+          const generateExcelBlob = () => {
+            const wb = XLSX.utils.book_new();
+            const sprintTag = activeSprintId.replace(/\s+/g, '_');
+
+            // 1. Capacidad-Balance
+            const capData = resourceMetrics.map(r => ({
+              "Nombre": r.name,
+              "Rol": r.role,
+              "Horas Disponibles por Día": r.capacity,
+              "Capacidad Disponible Total (H)": r.totalCapacityHours,
+              "Horas Requeridas Asignadas": r.requiredHours,
+              "Balance Horas Remanentes": r.balanceHours,
+              "Ocupación %": `${r.occupationPercent.toFixed(1)}%`,
+              "Estado de Ocupación": r.statusText
+            }));
+            const wsCap = XLSX.utils.json_to_sheet(capData);
+            
+            // Inyectar metadatos en las filas inferiores de Capacidad-Balance
+            const paramsMeta = [
+              [],
+              ["Disponibilidad QA-Hrs", 4],
+              ["Disponibilidad DEV-Hrs", 8],
+              ["Dias del Sprint", sprintWorkingDays],
+              ["Inicio", activeSprint.start],
+              ["Fin", activeSprint.end],
+              ["Cantidad de festivos", activeSprint.holidays.length]
+            ];
+            activeSprint.holidays.forEach((d, i) => {
+              paramsMeta.push([`Dia festivo ${i + 1}`, d]);
+            });
+            XLSX.utils.sheet_add_aoa(wsCap, paramsMeta, { origin: -1 });
+            XLSX.utils.book_append_sheet(wb, wsCap, `Capacidad-Balance`);
+
+            // 2. Horas DEV
+            const devRows = consolidatedStories.filter(h => h.hasDev).map(h => ({
+              "ID HU": h.id,
+              "Historia": h.name,
+              "Desarrollador Asignado": activeSprint.resources.find(r => r.id === h.devAssigned)?.name || 'Sin Asignar',
+              "Análisis": h.devHours.analisis,
+              "Diseño": h.devHours.diseño,
+              "Casos Prueba": h.devHours.casosPrueba,
+              "P. Unitarias": h.devHours.pUnitarias,
+              "Desarrollo": h.devHours.desarrollo,
+              "Documentación": h.devHours.documentacion,
+              "Total h DEV": h.totalDevHours,
+              "Fecha estimada FIN": h.devEndDate
+            }));
+            const wsDev = XLSX.utils.json_to_sheet(devRows);
+            XLSX.utils.book_append_sheet(wb, wsDev, `Horas_DEV`);
+
+            // 3. Horas QA
+            const qaRows = consolidatedStories.filter(h => h.hasQa).map(h => ({
+              "ID HU": h.id,
+              "Historia": h.name,
+              "Asegurador Asignado": activeSprint.resources.find(r => r.id === h.qaAssigned)?.name || 'Sin Asignar',
+              "Planeación": h.qaHours.planeacion,
+              "Diseño": h.qaHours.diseño,
+              "Ejecución": h.qaHours.ejecucion,
+              "Cierre": h.qaHours.cierre,
+              "Entrega": h.qaHours.entrega,
+              "Regresion": h.qaHours.regresion,
+              "Total QA": h.totalQaHours,
+              "Fecha Estimada FIN": h.qaEndDate
+            }));
+            const wsQa = XLSX.utils.json_to_sheet(qaRows);
+            XLSX.utils.book_append_sheet(wb, wsQa, `Horas_QA`);
+
+            // 4. HUs Sprint
+            const consData = consolidatedStories.map(h => ({
+              "ID HU": h.id,
+              "Desarrollo/QA/Regresion": h.hasDev && h.hasQa ? 'Desarrollo+QA' : h.hasDev ? 'Desarrollo' : 'QA',
+              "Nombres de HU": h.name,
+              "Puntos": h.points,
+              "Persona asignada": [
+                activeSprint.resources.find(r => r.id === h.devAssigned)?.name,
+                activeSprint.resources.find(r => r.id === h.qaAssigned)?.name
+              ].filter(Boolean).join(' / '),
+              "Horas DEV": h.totalDevHours,
+              "Horas QA": h.totalQaHours,
+              "Total Horas": h.totalDevHours + h.totalQaHours,
+              "DoD Requerido": activeSprint.dodList.join(', '),
+              "Estado actual": h.status || 'Planeada',
+              "Fecha de entrega a qa": h.hasDev ? h.devEndDate : ''
+            }));
+            const wsCons = XLSX.utils.json_to_sheet(consData);
+            XLSX.utils.book_append_sheet(wb, wsCons, `HUs_${activeSprintId}`);
+
+            const excelBuf = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
+            const buf = new ArrayBuffer(excelBuf.length);
+            const view = new Uint8Array(buf);
+            for (let i = 0; i < excelBuf.length; i++) view[i] = excelBuf.charCodeAt(i) & 0xFF;
+            return new Blob([buf], { type: 'application/octet-stream' });
+          };
+
+          const handleDragOver = (e) => e.preventDefault();
+
+          const handleDropExcel = (e) => {
+            e.preventDefault();
+            const file = e.dataTransfer.files[0];
             if (!file) return;
 
-            addLog(`Leyendo archivo de base de datos Excel: ${file.name}...`);
+            addLog(`Lectura por arrastre: ${file.name}...`);
             const reader = new FileReader();
             reader.onload = (evt) => {
-              try {
-                const data = evt.target.result;
-                const workbook = window.XLSX.read(data, { type: 'binary' });
-                const parsedSprints = {};
-                let parsedBacklog = [];
-
-                workbook.SheetNames.forEach(sheetName => {
-                  if (sheetName === 'Backlog_Rollover_Pendientes') {
-                    const sheet = workbook.Sheets[sheetName];
-                    const jsonData = window.XLSX.utils.sheet_to_json(sheet);
-                    parsedBacklog = jsonData.map(row => ({
-                      id: String(row["ID HU"] || ''), name: row["Historia de Usuario"] || 'Historia sin nombre', points: Number(row["Puntos SP"] || 3), hasDev: row["Esfuerzo DEV"] === "Sí", hasQa: row["Esfuerzo QA"] === "Sí",
-                      devHours: { analisis: 0, diseño: 0, casosPrueba: 0, pUnitarias: 0, desarrollo: 0, documentacion: 0 },
-                      qaHours: { planeacion: 0, diseño: 0, ejecucion: 0, cierre: 0, entrega: 0, regresion: 0 }
-                    }));
-                    return;
-                  }
-
-                  const match = sheetName.match(/(Consolidado_HUs|Horas_DEV|Horas_QA|Capacidad-Balance)_(Sprint_\d+)/);
-                  if (match) {
-                    const [_, tableType, sprintId] = match;
-                    const cleanSprintId = sprintId.replace('_', ' ');
-                    
-                    if (!parsedSprints[cleanSprintId]) {
-                      parsedSprints[cleanSprintId] = {
-                        id: cleanSprintId, start: '2026-07-27', end: '2026-08-12', holidays: [],
-                        resources: [
-                          { id: '1', name: 'Briyith Castaño', role: 'DEV', capacity: 8, exceptionStart: '' },
-                          { id: '2', name: 'Luis Oviedo', role: 'DEV', capacity: 8, exceptionStart: '' },
-                          { id: '3', name: 'Jordan Reyes', role: 'QA', capacity: 4, exceptionStart: '' }
-                        ],
-                        userStories: [], devQueues: {}, qaQueues: {},
-                        dodList: ['Código aprobado', 'Unitarias > 80%', 'Pruebas QA OK', 'Manual Técnico']
-                      };
-                    }
-                    
-                    const sheet = workbook.Sheets[sheetName];
-                    const jsonData = window.XLSX.utils.sheet_to_json(sheet);
-                    
-                    if (tableType === 'Consolidado_HUs') {
-                      jsonData.forEach(row => {
-                        const id = String(row["ID HU"] || '');
-                        if (!id) return;
-                        const existing = parsedSprints[cleanSprintId].userStories.find(h => h.id === id);
-                        const dodChecked = row["DoD Criterios Cumplidos"] ? String(row["DoD Criterios Cumplidos"]).split(',').map(s => s.trim()).filter(Boolean) : [];
-                        const storyObj = {
-                          id, name: row["Historia de Usuario"] || 'Historia sin nombre', points: Number(row["Puntos SP"] || 3), status: row["Estado Sprint"] || 'Planeada', delayCategory: row["Categoría de Retraso"] || '', delayReason: row["Motivo / Comentarios Retraso"] || '', dodChecked, devAssigned: '', qaAssigned: '', hasDev: false, hasQa: false,
-                          devHours: { analisis: 0, diseño: 0, casosPrueba: 0, pUnitarias: 0, desarrollo: 0, documentacion: 0 },
-                          qaHours: { planeacion: 0, diseño: 0, ejecucion: 0, cierre: 0, entrega: 0, regresion: 0 }
-                        };
-                        if (existing) Object.assign(existing, storyObj);
-                        else parsedSprints[cleanSprintId].userStories.push(storyObj);
-                      });
-                    } else if (tableType === 'Horas_DEV') {
-                      jsonData.forEach(row => {
-                        const id = String(row["ID HU"] || '');
-                        if (!id) return;
-                        let story = parsedSprints[cleanSprintId].userStories.find(h => h.id === id);
-                        if (!story) {
-                          story = { id, name: row["Historia"] || 'Historia', points: 3, status: 'Planeada', dodChecked: [], devHours: {}, qaHours: {} };
-                          parsedSprints[cleanSprintId].userStories.push(story);
-                        }
-                        story.hasDev = true;
-                        story.devHours = {
-                          analisis: Number(row["Análisis"] || 0), diseño: Number(row["Diseño"] || 0), casosPrueba: Number(row["Casos Prueba"] || 0), pUnitarias: Number(row["P. Unitarias"] || 0), desarrollo: Number(row["Desarrollo"] || 0), documentacion: Number(row["Documentación"] || 0)
-                        };
-                        const devName = row["Desarrollador Asignado"];
-                        const resObj = parsedSprints[cleanSprintId].resources.find(r => r.name.toLowerCase() === String(devName || '').toLowerCase());
-                        if (resObj) {
-                          story.devAssigned = resObj.id;
-                          if (!parsedSprints[cleanSprintId].devQueues[resObj.id]) parsedSprints[cleanSprintId].devQueues[resObj.id] = [];
-                          if (!parsedSprints[cleanSprintId].devQueues[resObj.id].includes(id)) parsedSprints[cleanSprintId].devQueues[resObj.id].push(id);
-                        }
-                      });
-                    } else if (tableType === 'Horas_QA') {
-                      jsonData.forEach(row => {
-                        const id = String(row["ID HU"] || '');
-                        if (!id) return;
-                        let story = parsedSprints[cleanSprintId].userStories.find(h => h.id === id);
-                        if (!story) {
-                          story = { id, name: row["Historia"] || 'Historia', points: 3, status: 'Planeada', dodChecked: [], devHours: {}, qaHours: {} };
-                          parsedSprints[cleanSprintId].userStories.push(story);
-                        }
-                        story.hasQa = true;
-                        story.qaHours = {
-                          planeacion: Number(row["Planeación"] || 0), diseño: Number(row["Diseño"] || 0), ejecucion: Number(row["Ejecución"] || 0), cierre: Number(row["Cierre"] || 0), entrega: Number(row["Entrega"] || 0), regresion: Number(row["Regresión"] || 0)
-                        };
-                        const qaName = row["Asegurador Asignado"];
-                        const resObj = parsedSprints[cleanSprintId].resources.find(r => r.name.toLowerCase() === String(qaName || '').toLowerCase());
-                        if (resObj) {
-                          story.qaAssigned = resObj.id;
-                          if (!parsedSprints[cleanSprintId].qaQueues[resObj.id]) parsedSprints[cleanSprintId].qaQueues[resObj.id] = [];
-                          if (!parsedSprints[cleanSprintId].qaQueues[resObj.id].includes(id)) parsedSprints[cleanSprintId].qaQueues[resObj.id].push(id);
-                        }
-                      });
-                    }
-                  }
-                });
-
-                if (Object.keys(parsedSprints).length > 0) {
-                  setSprints(parsedSprints);
-                  const keys = Object.keys(parsedSprints);
-                  setActiveSprintId(keys[keys.length - 1]);
-                  if (parsedBacklog.length > 0) setGlobalBacklog(parsedBacklog);
-                  addLog("Base de Datos Excel (.xlsx) estructurada de 2 vías importada con éxito.");
-                  showFeedback("Base de Datos Excel importada exitosamente.", "success");
-                } else {
-                  addLog("Advertencia: No se encontraron pestañas válidas con el prefijo 'Consolidado_HUs_Sprint_X'.");
-                  showFeedback("Estructura de tablas incompatible.", "error");
-                }
-              } catch (err) {
-                addLog(`Error parseando archivo: ${err.message}`);
-                showFeedback("Error leyendo la estructura del archivo Excel.", "error");
-              }
+              const workbook = XLSX.read(evt.target.result, { type: 'binary', cellDates: true });
+              parseWorkbookData(workbook, file.name);
             };
             reader.readAsBinaryString(file);
           };
 
+          // --- MANEJO DE HISTORIAS Y PARÁMETROS INTERNOS ---
           const handleSprintChange = (sprintId) => {
             setActiveSprintId(sprintId);
             showFeedback(`Cambiado al ${sprintId} correctamente`, 'success');
@@ -963,39 +1044,100 @@
             setConfirmState({
               isOpen: true, title: 'Limpiar Memoria de la App (Reset de Fábrica)', message: '¿Formatear la aplicación para un nuevo proyecto o empresa? Se eliminará todo el histórico actual del navegador de forma segura.',
               onConfirm: () => {
-                setSprints(cleanTemplateData);
-                setActiveSprintId('Sprint 1');
+                setSprints(null);
                 setGlobalBacklog([]);
                 setSyncLogs([]);
-                addLog("Aplicación formateada para nuevos proyectos.");
+                setFileHandle(null);
+                setFileNameLinked('');
+                localStorage.removeItem('SP_PLANNING_PORTAL_STATE');
                 showFeedback("Memoria formateada correctamente", "success");
                 setConfirmState(prev => ({ ...prev, isOpen: false }));
               }
             });
           };
 
-          const copyTableToClipboard = (tableType) => {
-            let tsvContent = "";
-            if (tableType === 'consolidado') {
-              tsvContent = "ID HU\tNombre HU\tPuntos\tEstado\tDoD %\tMotivo Retraso\tFecha Entrega\n";
-              consolidatedStories.forEach(hu => {
-                tsvContent += `${hu.id}\t${hu.name}\t${hu.points}\t${hu.status}\t${hu.dodProgress}%\t${hu.delayCategory || 'N/A'}\t${hu.finalDeliveryDate}\n`;
-              });
-            } else if (tableType === 'backlog') {
-              tsvContent = "ID HU\tNombre HU\tPuntos\tEsfuerzo DEV\tEsfuerzo QA\n";
-              globalBacklog.forEach(hu => {
-                tsvContent += `${hu.id}\t${hu.name}\t${hu.points}\tRequiere DEV\tRequiere QA\n`;
-              });
-            }
-            const tempTextArea = document.createElement('textarea');
-            tempTextArea.value = tsvContent;
-            document.body.appendChild(tempTextArea);
-            tempTextArea.select();
-            document.execCommand('copy');
-            document.body.removeChild(tempTextArea);
-            showFeedback('Tabla copiada en formato TSV Excel.', 'success');
-          };
+          // --- VISTA DE BIENVENIDA / INGESTA ---
+          if (!sprints) {
+            return (
+              <div className="min-h-screen bg-slate-900 flex flex-col justify-center items-center p-6 text-white">
+                <div className="max-w-xl w-full bg-slate-800 rounded-3xl p-8 border border-slate-700/60 shadow-2xl space-y-8 animate-fade-in text-center">
+                  
+                  <div className="flex flex-col items-center space-y-3">
+                    <div className="bg-emerald-600/20 text-emerald-400 p-4 rounded-2xl border border-emerald-500/30">
+                      <Icons.FileExcel />
+                    </div>
+                    <h1 className="text-2xl font-black tracking-tight">Portal de Planeación Ágil</h1>
+                    <p className="text-slate-400 text-xs max-w-sm">Cargue su archivo SharePoint sincronizado en local para iniciar</p>
+                  </div>
 
+                  {/* Drag and Drop Area */}
+                  <div 
+                    onDragOver={handleDragOver}
+                    onDrop={handleDropExcel}
+                    className="border-2 border-dashed border-slate-700 hover:border-emerald-500 rounded-2xl p-8 bg-slate-800/50 hover:bg-slate-800 transition cursor-pointer flex flex-col items-center justify-center space-y-4"
+                  >
+                    <div className="text-slate-500">
+                      <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-sm">Arrastre y suelte su Excel aquí</h4>
+                      <p className="text-[10px] text-slate-500 mt-1">Soporta 'Planning-Sprint 59.xlsx' o versiones similares</p>
+                    </div>
+                    <label className="px-3.5 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-xl text-xs font-bold transition cursor-pointer">
+                      Seleccionar Archivo Manual
+                      <input 
+                        type="file" 
+                        accept=".xlsx, .xls" 
+                        onChange={(e) => {
+                          const file = e.target.files[0];
+                          if (!file) return;
+                          const reader = new FileReader();
+                          reader.onload = (evt) => {
+                            const workbook = XLSX.read(evt.target.result, { type: 'binary', cellDates: true });
+                            parseWorkbookData(workbook, file.name);
+                          };
+                          reader.readAsBinaryString(file);
+                        }} 
+                        className="hidden" 
+                      />
+                    </label>
+                  </div>
+
+                  {/* API de Sincronización Directa (Chromium browsers) */}
+                  {window.showOpenFilePicker && (
+                    <div className="space-y-3">
+                      <div className="relative flex py-1 items-center">
+                        <div className="flex-grow border-t border-slate-700/60"></div>
+                        <span className="flex-shrink mx-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider">O vinculación directa</span>
+                        <div className="flex-grow border-t border-slate-700/60"></div>
+                      </div>
+                      <button
+                        onClick={handleLinkLocalExcel}
+                        className="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-2xl text-xs font-black tracking-wider uppercase transition shadow-lg shadow-emerald-600/10"
+                      >
+                        Vincular Excel de SharePoint (.xlsx)
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Sandbox Fallback */}
+                  <div className="text-center">
+                    <button 
+                      onClick={() => setSprints(demoSprintsData)}
+                      className="text-slate-500 hover:text-slate-300 transition text-[11px] underline"
+                    >
+                      Usar Escenario de Demostración (Demo Sandbox)
+                    </button>
+                  </div>
+
+                </div>
+              </div>
+            );
+          }
+
+          // --- VISTA PRINCIPAL ---
           return (
             <div className="min-h-screen bg-slate-50 text-slate-800 font-sans antialiased pb-12">
               {feedbackMessage && (
@@ -1008,25 +1150,47 @@
               <header className="bg-slate-900 text-white shadow-xl">
                 <div className="max-w-7xl mx-auto px-4 py-5 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4">
                   <div className="flex items-center gap-3">
-                    <div className="bg-blue-600 p-2.5 rounded-xl text-white shadow-md shadow-blue-500/20">
+                    <div className="bg-emerald-600 p-2.5 rounded-xl text-white shadow-md shadow-emerald-500/20">
                       <Icons.Database />
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
                         <h1 className="text-xl font-bold tracking-tight">Capacidad Ágil & DoD Cascadas</h1>
-                        <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-500 text-white flex items-center gap-1">
-                          <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
-                          Excel Sync En Memoria
-                        </span>
+                        {fileHandle ? (
+                          <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-500 text-white flex items-center gap-1">
+                            🟢 Sincronizado Directo: {fileNameLinked}
+                          </span>
+                        ) : (
+                          <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-amber-500 text-white flex items-center gap-1">
+                            Local Caching
+                          </span>
+                        )}
                       </div>
-                      <p className="text-slate-400 text-xs mt-0.5">Seguimiento de DoD, Retrasos y Base de Datos Excel Unificada por Sprints</p>
+                      <p className="text-slate-400 text-xs mt-0.5">Seguimiento de DoD, Retrasos y Base de Datos Excel por Sprints</p>
                     </div>
                   </div>
                   
                   <div className="flex items-center gap-3 w-full md:w-auto justify-end">
-                    <button onClick={handleExportExcel} className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-lg shadow-emerald-500/10">
-                      <Icons.CloudSync /> Guardar / Descargar Excel
-                    </button>
+                    {fileHandle ? (
+                      <button 
+                        onClick={handleDirectSyncSave} 
+                        className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black tracking-wide transition flex items-center gap-2 shadow-lg shadow-emerald-500/10"
+                        title="Sobrescribe directamente el archivo local que vinculaste de OneDrive/SharePoint"
+                      >
+                        <Icons.CloudSync />
+                        Sincronizar SharePoint (.xlsx)
+                      </button>
+                    ) : (
+                      <button 
+                        onClick={handleDownloadBackup} 
+                        className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-lg"
+                        title="Descarga el archivo Excel estructurado de 4 vías"
+                      >
+                        <Icons.CloudSync />
+                        Descargar Excel
+                      </button>
+                    )}
+
                     <div className="bg-slate-800/80 border border-slate-700/60 rounded-xl px-4 py-2 flex items-center gap-4 text-sm w-full md:w-auto">
                       <div>
                         <label className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">Sprint Activo</label>
@@ -1035,8 +1199,8 @@
                         </select>
                       </div>
                       <div className="border-l border-slate-700 pl-4">
-                        <div className="text-xs text-slate-400">Días Hábiles</div>
-                        <div className="font-semibold text-white text-center">{sprintWorkingDays} d</div>
+                        <div className="text-xs text-slate-400 font-medium">Días Hábiles</div>
+                        <div className="font-bold text-white text-center text-sm">{sprintWorkingDays} d</div>
                       </div>
                     </div>
                     <button onClick={createNewSprint} className="px-3.5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1 shadow-lg shadow-blue-500/10">
@@ -1047,15 +1211,14 @@
               </header>
 
               <main className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8 space-y-8 animate-fade-in">
+                
+                {/* --- SECCIÓN CAPACIDAD GENERAL --- */}
                 <section className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
                   <div className="flex justify-between items-center mb-6">
                     <div>
-                      <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2"><Icons.Chart /> Capacidad General en {activeSprintId}</h2>
-                      <p className="text-xs text-slate-500">Métricas en tiempo real cruzando esfuerzos estimados con días hábiles laborables</p>
+                      <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2"><Icons.Chart /> Balance de Capacidad de Sprints</h2>
+                      <p className="text-xs text-slate-500">Métricas procesadas dinámicamente según tus tablas de Excel</p>
                     </div>
-                    <button onClick={() => copyTableToClipboard('consolidado')} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:text-blue-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition">
-                      <Icons.Copy /> Copiar Datos TSV
-                    </button>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -1103,32 +1266,45 @@
                   <button onClick={() => setActiveTab('dev')} className={`px-5 py-3 font-semibold text-sm rounded-t-xl transition flex items-center gap-2 ${activeTab === 'dev' ? 'bg-white border-t border-x border-slate-200 text-blue-600 shadow-sm' : 'text-slate-500 hover:bg-slate-100'}`}><Icons.User /> Desglose DEV Cascadas</button>
                   <button onClick={() => setActiveTab('qa')} className={`px-5 py-3 font-semibold text-sm rounded-t-xl transition flex items-center gap-2 ${activeTab === 'qa' ? 'bg-white border-t border-x border-slate-200 text-blue-600 shadow-sm' : 'text-slate-500 hover:bg-slate-100'}`}><Icons.Clock /> Desglose QA Cascadas</button>
                   <button onClick={() => setActiveTab('backlog')} className={`px-5 py-3 font-semibold text-sm rounded-t-xl transition flex items-center gap-2 ${activeTab === 'backlog' ? 'bg-white border-t border-x border-slate-200 text-blue-600 shadow-sm' : 'text-slate-500 hover:bg-slate-100'}`}><Icons.Inbox /> Backlog Rollover ({globalBacklog.length})</button>
-                  <button onClick={() => setActiveTab('sharepoint')} className={`px-5 py-3 font-semibold text-sm rounded-t-xl transition flex items-center gap-2 bg-gradient-to-r from-emerald-500/10 to-teal-500/10 ${activeTab === 'sharepoint' ? 'bg-white border-t border-x border-slate-200 text-emerald-600 shadow-sm font-bold' : 'text-emerald-700 hover:bg-emerald-50'}`}><Icons.CloudSync /> Base de Datos Excel (.xlsx)</button>
+                  <button onClick={() => setActiveTab('sharepoint')} className={`px-5 py-3 font-semibold text-sm rounded-t-xl transition flex items-center gap-2 bg-gradient-to-r from-emerald-500/10 to-teal-500/10 ${activeTab === 'sharepoint' ? 'bg-white border-t border-x border-slate-200 text-emerald-600 shadow-sm font-bold' : 'text-emerald-700 hover:bg-emerald-50'}`}><Icons.CloudSync /> Configuración de Base de Datos</button>
                   <button onClick={() => setActiveTab('po')} className={`px-5 py-3 font-semibold text-sm rounded-t-xl transition flex items-center gap-2 sm:ml-auto ${activeTab === 'po' ? 'bg-white border-t border-x border-slate-200 text-blue-600 shadow-sm' : 'text-slate-500 hover:bg-slate-100'}`}><Icons.Settings /> Parámetros Globales & DoD</button>
                 </div>
 
+                {/* TAB: CONFIGURACIÓN BASE DE DATOS Y RESET */}
                 {activeTab === 'sharepoint' && (
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-6">
                       <div>
-                        <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2 text-emerald-700"><Icons.CloudSync /> Sincronización de Base de Datos Excel Unificada</h3>
-                        <p className="text-sm text-slate-500 mt-1">Cargue su archivo de planificación de SharePoint desde su PC local (con OneDrive/SharePoint Desktop Sync) para procesar e inicializar instantáneamente todo el ecosistema de Sprints.</p>
+                        <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2 text-emerald-700"><Icons.CloudSync /> Conexión Directa a OneDrive / SharePoint</h3>
+                        <p className="text-sm text-slate-500 mt-1">Sincronice o vincule un nuevo archivo de planificación directamente desde su PC corporativa.</p>
                       </div>
+
                       <div className="border-2 border-dashed border-slate-300 rounded-2xl p-8 hover:bg-slate-50 transition cursor-pointer flex flex-col items-center justify-center text-center relative">
-                        <input type="file" accept=".xlsx, .xls" onChange={handleImportExcel} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                        <input type="file" accept=".xlsx, .xls" onChange={(e) => {
+                          const file = e.target.files[0];
+                          if (!file) return;
+                          const reader = new FileReader();
+                          reader.onload = (evt) => {
+                            const workbook = XLSX.read(evt.target.result, { type: 'binary', cellDates: true });
+                            parseWorkbookData(workbook, file.name);
+                          };
+                          reader.readAsBinaryString(file);
+                        }} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
                         <div className="bg-emerald-50 text-emerald-600 p-4 rounded-full mb-3"><Icons.CloudSync /></div>
                         <h4 className="font-bold text-slate-800 text-sm">Arrastre y suelte su archivo Excel corporativo aquí</h4>
-                        <p className="text-xs text-slate-400 mt-1 max-w-sm">Recomendado utilizar su archivo 'Planning_Database_Sprints.xlsx' para decodificar todas las tablas en un instante.</p>
+                        <p className="text-xs text-slate-400 mt-1 max-w-sm">Carga inmediata de las tablas del sprint actual.</p>
                         <span className="mt-3 px-3 py-1 bg-slate-100 hover:bg-slate-200 text-[11px] font-bold text-slate-700 rounded-lg transition">Seleccionar desde Archivos</span>
                       </div>
+
                       <div className="bg-rose-50 border border-rose-200 rounded-xl p-5 space-y-4">
                         <div>
-                          <h4 className="font-bold text-rose-800 text-sm flex items-center gap-1.5"><Icons.AlertCircle /> Formatear y Limpiar la Aplicación (Handover Seguro)</h4>
-                          <p className="text-xs text-rose-700 mt-1">Esta opción borra instantáneamente toda la memoria de sprints, backlog y recursos locales de su navegador. Su aplicación quedará limpia para su próximo proyecto en blanco sin dejar rastro de datos anteriores.</p>
+                          <h4 className="font-bold text-rose-800 text-sm flex items-center gap-1.5"><Icons.AlertCircle /> Formatear y Limpiar la Aplicación (Handover de Consultoría)</h4>
+                          <p className="text-xs text-rose-700 mt-1">Borra instantáneamente toda la memoria de sprints, backlog y recursos locales de su navegador, asegurando que no se mezclen datos entre clientes ni queden rastros confidenciales.</p>
                         </div>
-                        <button onClick={triggerAppResetConfirm} className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-lg transition shadow-md">Reset Completo / Nueva Empresa</button>
+                        <button onClick={triggerAppResetConfirm} className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-lg transition shadow-md">Reset Completo / Handover Seguro</button>
                       </div>
                     </div>
+
                     <div className="bg-slate-900 text-slate-200 rounded-2xl shadow-sm p-6 flex flex-col h-full min-h-[300px]">
                       <div className="border-b border-slate-800 pb-3 mb-4">
                         <h4 className="font-bold text-sm text-slate-400 flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>Consola del Gestor de Excel</h4>
@@ -1140,12 +1316,13 @@
                   </div>
                 )}
 
+                {/* TAB: TABLERO SPRINT PRINCIPAL */}
                 {activeTab === 'consolidado' && (
                   <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                     <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                       <div>
                         <h3 className="font-bold text-slate-900 text-lg">Control de Historias e Integración de Criterios DoD</h3>
-                        <p className="text-xs text-slate-500">Supervise el estado, avance del Definition of Done y justificación de retrasos</p>
+                        <p className="text-xs text-slate-500 font-medium">Supervise el estado, avance del Definition of Done y justificación de retrasos</p>
                       </div>
                       <button onClick={handleOpenAddModal} className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 shadow-lg rounded-xl transition flex items-center gap-1.5"><Icons.Plus /> Agregar HU</button>
                     </div>
@@ -1220,6 +1397,7 @@
                   </div>
                 )}
 
+                {/* TAB: DESGLOSE DEV CASCADAS */}
                 {activeTab === 'dev' && (
                   <div className="space-y-6">
                     {activeSprint.resources.filter(r => r.role === 'DEV').map(resource => {
@@ -1283,6 +1461,7 @@
                   </div>
                 )}
 
+                {/* TAB: DESGLOSE QA CASCADAS */}
                 {activeTab === 'qa' && (
                   <div className="space-y-6">
                     {activeSprint.resources.filter(r => r.role === 'QA').map(resource => {
@@ -1346,18 +1525,19 @@
                   </div>
                 )}
 
+                {/* TAB: BACKLOG GENERAL */}
                 {activeTab === 'backlog' && (
                   <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-6">
                     <div className="flex justify-between items-center border-b border-slate-100 pb-4">
                       <div>
                         <h3 className="font-bold text-slate-900 text-lg flex items-center gap-2"><Icons.Inbox /> Backlog de Rollovers & HUs sin Asignar</h3>
-                        <p className="text-xs text-slate-500">Repositorio global para historias de usuario de Sprints anteriores que necesitan ser re-integradas.</p>
+                        <p className="text-xs text-slate-500">Historias pendientes que serán reprogramadas secuencialmente en el periodo activo.</p>
                       </div>
                       <button onClick={() => copyTableToClipboard('backlog')} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:text-blue-600 bg-slate-100 rounded-lg transition"><Icons.Copy /> Exportar Backlog TSV</button>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {globalBacklog.length === 0 ? (
-                        <div className="md:col-span-2 text-center py-12 text-slate-400 italic">No hay historias pendientes en el Backlog. ¡Excelente desempeño!</div>
+                        <div className="md:col-span-2 text-center py-12 text-slate-400 italic">No hay historias pendientes en el Backlog. ¡Todo al día!</div>
                       ) : (
                         globalBacklog.map((story) => (
                           <div key={story.id} className="border border-slate-200 bg-slate-50/50 hover:bg-slate-50 rounded-xl p-4 flex flex-col justify-between gap-4">
@@ -1367,7 +1547,7 @@
                                 <span className="text-[11px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-md">Pendiente de Sprint</span>
                               </div>
                               <h4 className="font-bold text-slate-800 text-sm mt-1">{story.name}</h4>
-                              <p className="text-xs text-slate-500 mt-2">{story.points} SP • {story.hasDev ? 'Requiere DEV' : 'Sin DEV'} • {story.hasQa ? 'Requiere QA' : 'Sin QA'}</p>
+                              <p className="text-xs text-slate-500 mt-2">{story.points} SP • {story.hasDev ? 'DEV' : 'Sin DEV'} • {story.hasQa ? 'QA' : 'Sin QA'}</p>
                             </div>
                             <div className="flex justify-end gap-2 border-t border-slate-200/60 pt-3">
                               <button onClick={() => triggerDiscardBacklogConfirm(story.id)} className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-slate-100 rounded-lg transition"><Icons.Trash /></button>
@@ -1380,17 +1560,18 @@
                   </div>
                 )}
 
+                {/* TAB: GOBERNANZA DOD & FESTIVOS */}
                 {activeTab === 'po' && (
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-6">
                       <div>
-                        <h4 className="font-bold text-slate-900 text-base flex items-center gap-2"><Icons.Calendar /> Fechas de Gobernanza del Sprint</h4>
-                        <p className="text-xs text-slate-500">Configure los rangos activos para {activeSprintId}</p>
+                        <h4 className="font-bold text-slate-900 text-base flex items-center gap-2"><Icons.Calendar /> Fechas del Sprint</h4>
+                        <p className="text-xs text-slate-500">Límites activos procesados de su archivo Excel</p>
                       </div>
                       <div className="space-y-4">
                         <div>
-                          <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Nombre/ID</label>
-                          <input type="text" value={activeSprintId} disabled className="w-full bg-slate-100 border border-slate-200 rounded-xl px-3.5 py-2 text-sm text-slate-500 cursor-not-allowed" />
+                          <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">ID Sprint</label>
+                          <input type="text" value={activeSprintId} disabled className="w-full bg-slate-100 border border-slate-200 rounded-xl px-3.5 py-2 text-sm text-slate-500 cursor-not-allowed font-semibold" />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                           <div>
@@ -1415,7 +1596,7 @@
                     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-6">
                       <div>
                         <h4 className="font-bold text-slate-900 text-base flex items-center gap-2"><Icons.Check /> Criterios del Definition of Done (DoD)</h4>
-                        <p className="text-xs text-slate-500">Defina la lista de verificación obligatoria para este periodo</p>
+                        <p className="text-xs text-slate-500 font-medium">Requisitos técnicos mínimos obligatorios para cierre</p>
                       </div>
                       <div className="space-y-4">
                         <div className="flex gap-2">
@@ -1451,7 +1632,7 @@
                     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-6">
                       <div>
                         <h4 className="font-bold text-slate-900 text-base flex items-center gap-2"><Icons.AlertCircle /> Calendario de Días Festivos</h4>
-                        <p className="text-xs text-slate-500 font-medium">Días no laborables que se restarán del cómputo</p>
+                        <p className="text-xs text-slate-500 font-medium">No hábiles omitidos en el cronograma</p>
                       </div>
                       <div className="space-y-4">
                         <div className="flex gap-2">
@@ -1485,13 +1666,14 @@
                 )}
               </main>
 
+              {/* MODAL: CREACIÓN / EDICIÓN */}
               {isModalOpen && (
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                   <div className="bg-white rounded-2xl shadow-2xl border border-slate-100 max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
                     <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
                       <div>
                         <h3 className="font-bold text-slate-900 text-lg">{modalMode === 'add' ? 'Nueva Historia de Usuario' : 'Editar Historia y Configuración DoD'}</h3>
-                        <p className="text-xs text-slate-500 mt-1">Configure los parámetros, horas de diseño, ejecución y auditoría de retrasos</p>
+                        <p className="text-xs text-slate-500 mt-1 font-medium">Ajuste de tiempos y controles de calidad para la cascada</p>
                       </div>
                       <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 bg-white border border-slate-200 rounded-full p-1.5 transition">✕</button>
                     </div>
@@ -1504,7 +1686,7 @@
                         </div>
                         <div className="md:col-span-2">
                           <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Nombre de la Historia *</label>
-                          <input type="text" value={huForm.name} onChange={(e) => handleInputChange('name', e.target.value)} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500/20" placeholder="Escriba un nombre descriptivo..." />
+                          <input type="text" value={huForm.name} onChange={(e) => handleInputChange('name', e.target.value)} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500/20 font-medium" placeholder="Escriba un nombre descriptivo..." />
                         </div>
                       </div>
 
@@ -1574,7 +1756,7 @@
                         <div className={`p-4 rounded-xl border ${huForm.hasDev ? 'border-slate-200 bg-slate-50/50' : 'border-slate-100 bg-slate-100/50 opacity-50'}`}>
                           <h4 className="font-bold text-sm text-slate-800 mb-4 flex items-center justify-between">
                             <span>Desglose DEV (Horas)</span>
-                            <span className="text-xs font-bold text-blue-600">Total: {Object.values(huForm.devHours).reduce((a, b) => a + Number(b || 0), 0)}h</span>
+                            <span className="text-xs font-bold text-blue-600 font-semibold">Total: {Object.values(huForm.devHours).reduce((a, b) => a + Number(b || 0), 0)}h</span>
                           </h4>
                           <div className="grid grid-cols-2 gap-3 text-xs">
                             {['analisis', 'diseño', 'casosPrueba', 'pUnitarias', 'desarrollo', 'documentacion'].map(f => (
@@ -1589,7 +1771,7 @@
                         <div className={`p-4 rounded-xl border ${huForm.hasQa ? 'border-slate-200 bg-slate-50/50' : 'border-slate-100 bg-slate-100/50 opacity-50'}`}>
                           <h4 className="font-bold text-sm text-slate-800 mb-4 flex items-center justify-between">
                             <span>Desglose QA (Horas)</span>
-                            <span className="text-xs font-bold text-purple-600">Total: {Object.values(huForm.qaHours).reduce((a, b) => a + Number(b || 0), 0)}h</span>
+                            <span className="text-xs font-bold text-purple-600 font-semibold">Total: {Object.values(huForm.qaHours).reduce((a, b) => a + Number(b || 0), 0)}h</span>
                           </h4>
                           <div className="grid grid-cols-2 gap-3 text-xs">
                             {['planeacion', 'diseño', 'ejecucion', 'cierre', 'entrega', 'regresion'].map(f => (
@@ -1611,14 +1793,15 @@
                 </div>
               )}
 
+              {/* DIÁLOGO DE CONFIRMACIÓN */}
               {confirmState.isOpen && (
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                  <div className="bg-white rounded-2xl shadow-2xl border border-slate-100 max-w-md w-full p-6">
+                  <div className="bg-white rounded-2xl shadow-2xl border border-slate-100 max-w-md w-full p-6 animate-fade-in">
                     <div className="flex items-center gap-3 text-amber-600 mb-4">
                       <Icons.AlertCircle />
                       <h3 className="font-bold text-slate-900 text-lg">{confirmState.title}</h3>
                     </div>
-                    <p className="text-sm text-slate-600 mb-6 leading-relaxed">{confirmState.message}</p>
+                    <p className="text-sm text-slate-600 mb-6 leading-relaxed font-medium">{confirmState.message}</p>
                     <div className="flex justify-end gap-3">
                       <button onClick={() => setConfirmState(prev => ({ ...prev, isOpen: false }))} className="px-4 py-2 border border-slate-200 hover:bg-slate-100 text-slate-700 font-semibold text-sm rounded-xl transition">Cancelar</button>
                       <button onClick={confirmState.onConfirm} className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-semibold text-sm rounded-xl shadow-lg transition">Confirmar</button>
@@ -1630,7 +1813,6 @@
           );
         }
 
-        // Renderizado del componente principal en el DOM
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
     </script>
