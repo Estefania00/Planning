@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Capacidad Ágil & DoD Cascadas 3.0</title>
+    <title>Capacidad Ágil & DoD Cascadas4.0</title>
     <!-- Tailwind CSS Play CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- React & ReactDOM (Librerías de Producción de React) -->
@@ -31,7 +31,6 @@
     <script type="text/babel">
         const { useState, useMemo, useEffect } = React;
 
-        // --- SISTEMA DE CÁLCULO DE FESTIVOS OFICIALES EN COLOMBIA (LEY EMILIANI) ---
         function getEasterDate(year) {
           const a = year % 19;
           const b = Math.floor(year / 100);
@@ -52,20 +51,16 @@
 
         function getColombianHolidaysWithNames(year) {
           const list = [];
-          
-          // Ley Emiliani: Mueve ciertos festivos al siguiente lunes (si caen en otro día)
           const emiliani = (date) => {
-            const day = date.getUTCDay(); // 0 = Domingo, 1 = Lunes, ..., 6 = Sábado
+            const day = date.getUTCDay();
             if (day === 1) return date; // Ya es lunes
             const diff = day === 0 ? 1 : 8 - day;
             const res = new Date(date);
             res.setUTCDate(res.getUTCDate() + diff);
             return res;
           };
-          
           const formatISO = (d) => d.toISOString().split('T')[0];
           
-          // 1. Festivos con Fecha Inamovible (No Emiliani)
           list.push({ date: formatISO(new Date(Date.UTC(year, 0, 1))), name: "Año Nuevo" });
           list.push({ date: formatISO(new Date(Date.UTC(year, 4, 1))), name: "Día del Trabajo" });
           list.push({ date: formatISO(new Date(Date.UTC(year, 6, 20))), name: "Grito de Independencia" });
@@ -73,7 +68,6 @@
           list.push({ date: formatISO(new Date(Date.UTC(year, 11, 8))), name: "Inmaculada Concepción" });
           list.push({ date: formatISO(new Date(Date.UTC(year, 11, 25))), name: "Navidad" });
 
-          // 2. Festivos regulados por Ley Emiliani (Se corren al siguiente Lunes)
           list.push({ date: formatISO(emiliani(new Date(Date.UTC(year, 0, 6)))), name: "Reyes Magos" });
           list.push({ date: formatISO(emiliani(new Date(Date.UTC(year, 2, 19)))), name: "San José" });
           list.push({ date: formatISO(emiliani(new Date(Date.UTC(year, 5, 29)))), name: "San Pedro y San Pablo" });
@@ -82,35 +76,27 @@
           list.push({ date: formatISO(emiliani(new Date(Date.UTC(year, 10, 1)))), name: "Todos los Santos" });
           list.push({ date: formatISO(emiliani(new Date(Date.UTC(year, 10, 11)))), name: "Independencia de Cartagena" });
 
-          // 3. Festivos móviles respecto a la Pascua / Semana Santa
           const easter = getEasterDate(year);
-          
-          // Jueves Santo (Pascua - 3 días)
           const juevesSanto = new Date(easter);
           juevesSanto.setUTCDate(juevesSanto.getUTCDate() - 3);
           list.push({ date: formatISO(juevesSanto), name: "Jueves Santo" });
 
-          // Viernes Santo (Pascua - 2 días)
           const viernesSanto = new Date(easter);
           viernesSanto.setUTCDate(viernesSanto.getUTCDate() - 2);
           list.push({ date: formatISO(viernesSanto), name: "Viernes Santo" });
 
-          // Ascensión del Señor (Pascua + 39 días, corrido 4 días al lunes siguiente = Pascua + 43 días)
           const ascension = new Date(easter);
           ascension.setUTCDate(ascension.getUTCDate() + 43);
           list.push({ date: formatISO(ascension), name: "Ascensión del Señor" });
 
-          // Corpus Christi (Pascua + 60 días, corrido 4 días al lunes siguiente = Pascua + 64 días)
           const corpus = new Date(easter);
           corpus.setUTCDate(corpus.getUTCDate() + 64);
           list.push({ date: formatISO(corpus), name: "Corpus Christi" });
 
-          // Sagrado Corazón de Jesús (Pascua + 68 días, corrido 3 días al lunes siguiente = Pascua + 71 días)
           const sagradoCorazon = new Date(easter);
           sagradoCorazon.setUTCDate(sagradoCorazon.getUTCDate() + 71);
           list.push({ date: formatISO(sagradoCorazon), name: "Sagrado Corazón" });
 
-          // Filtrar duplicados y ordenar cronológicamente
           const seen = new Set();
           return list.filter(item => {
             if (seen.has(item.date)) return false;
@@ -123,7 +109,6 @@
           const start = new Date(startStr + 'T00:00:00');
           const end = new Date(endStr + 'T00:00:00');
           if (isNaN(start) || isNaN(end) || start > end) return [];
-          
           const startYear = start.getFullYear();
           const endYear = end.getFullYear();
           
@@ -131,7 +116,6 @@
           for (let y = startYear; y <= endYear; y++) {
             allHolidays = allHolidays.concat(getColombianHolidaysWithNames(y));
           }
-          
           return allHolidays.filter(h => {
             const hDate = new Date(h.date + 'T00:00:00');
             return hDate >= start && hDate <= end;
@@ -144,14 +128,12 @@
           while (true) {
             const year = current.getFullYear();
             const holidays = getColombianHolidaysWithNames(year).map(h => h.date);
-            const day = current.getDay(); // 0 = Domingo, 6 = Sábado
+            const day = current.getDay();
             const isWeekend = day === 0 || day === 6;
             const currentISO = current.toISOString().split('T')[0];
             const isHoliday = holidays.includes(currentISO);
             
-            if (!isWeekend && !isHoliday) {
-              return currentISO;
-            }
+            if (!isWeekend && !isHoliday) return currentISO;
             current.setDate(current.getDate() + 1);
           }
         }
@@ -248,6 +230,11 @@
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
             </svg>
+          ),
+          Users: () => (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
           )
         };
 
@@ -331,10 +318,42 @@
           qaHours: { planeacion: 0, diseño: 0, ejecucion: 0, cierre: 0, entrega: 0, regresion: 0 }
         };
 
+        const initialResourceFormState = {
+          id: '',
+          name: '',
+          role: 'DEV',
+          capacity: 8,
+          exceptionStart: ''
+        };
+
         function App() {
+          // AUTO-RECUPERACIÓN DE MEMORIA: Detecta estructuras dañadas o parciales y las repara con valores por defecto seguros
           const [sprints, setSprints] = useState(() => {
-            const saved = localStorage.getItem('SP_PLANNING_PORTAL_STATE');
-            return saved ? JSON.parse(saved) : demoSprintsData; 
+            try {
+              const saved = localStorage.getItem('SP_PLANNING_PORTAL_STATE');
+              if (saved) {
+                const parsed = JSON.parse(saved);
+                if (parsed && typeof parsed === 'object' && Object.keys(parsed).length > 0) {
+                  // Reparación en caliente de propiedades esenciales
+                  Object.keys(parsed).forEach(key => {
+                    const s = parsed[key];
+                    if (!s) parsed[key] = { id: key };
+                    if (!parsed[key].start) parsed[key].start = '2026-07-27';
+                    if (!parsed[key].end) parsed[key].end = '2026-08-12';
+                    if (!Array.isArray(parsed[key].holidays)) parsed[key].holidays = [];
+                    if (!Array.isArray(parsed[key].resources)) parsed[key].resources = [];
+                    if (!Array.isArray(parsed[key].userStories)) parsed[key].userStories = [];
+                    if (!parsed[key].devQueues || typeof parsed[key].devQueues !== 'object') parsed[key].devQueues = {};
+                    if (!parsed[key].qaQueues || typeof parsed[key].qaQueues !== 'object') parsed[key].qaQueues = {};
+                    if (!Array.isArray(parsed[key].dodList)) parsed[key].dodList = ['Código aprobado', 'Unitarias > 80%'];
+                  });
+                  return parsed;
+                }
+              }
+            } catch (err) {
+              console.error("No se pudo parsear el localStorage, reiniciando al demo sandbox", err);
+            }
+            return demoSprintsData; 
           });
 
           const [activeSprintId, setActiveSprintId] = useState(() => {
@@ -360,10 +379,13 @@
           const [confirmState, setConfirmState] = useState({ isOpen: false, title: '', message: '', onConfirm: null });
           const [globalBacklog, setGlobalBacklog] = useState([]);
           const [huForm, setHuForm] = useState(initialFormState);
+          const [resourceForm, setResourceForm] = useState(initialResourceFormState);
           const [activeTab, setActiveTab] = useState('consolidado'); 
           const [isModalOpen, setIsModalOpen] = useState(false);
+          const [isResourceModalOpen, setIsResourceModalOpen] = useState(false);
           const [modalMode, setModalMode] = useState('add'); 
           const [editingStoryId, setEditingStoryId] = useState(null);
+          const [editingResourceId, setEditingResourceId] = useState(null);
           const [feedbackMessage, setFeedbackMessage] = useState(null);
           const [feedbackType, setFeedbackType] = useState('success');
           const [syncLogs, setSyncLogs] = useState([]);
@@ -389,20 +411,32 @@
             setTimeout(() => setFeedbackMessage(null), 3500);
           };
 
+          // ACCESO SEGURO CON VALORES POR DEFECTO PARA EL SPRINT ACTIVO
           const activeSprint = useMemo(() => {
             if (!sprints || !sprints[activeSprintId]) {
               return {
                 id: activeSprintId, start: '2026-07-27', end: '2026-08-12', holidays: [], resources: [], userStories: [], devQueues: {}, qaQueues: {}, dodList: []
               };
             }
-            return sprints[activeSprintId];
+            const s = sprints[activeSprintId];
+            return {
+              id: s.id || activeSprintId,
+              start: s.start || '2026-07-27',
+              end: s.end || '2026-08-12',
+              holidays: Array.isArray(s.holidays) ? s.holidays : [],
+              resources: Array.isArray(s.resources) ? s.resources : [],
+              userStories: Array.isArray(s.userStories) ? s.userStories : [],
+              devQueues: s.devQueues && typeof s.devQueues === 'object' ? s.devQueues : {},
+              qaQueues: s.qaQueues && typeof s.qaQueues === 'object' ? s.qaQueues : {},
+              dodList: Array.isArray(s.dodList) ? s.dodList : []
+            };
           }, [sprints, activeSprintId]);
 
           const isBusinessDay = (date, holidayList) => {
             const day = date.getDay(); 
             if (day === 0 || day === 6) return false;
             const dateStr = date.toISOString().split('T')[0];
-            return !holidayList.includes(dateStr);
+            return !(holidayList || []).includes(dateStr);
           };
 
           const sprintWorkingDays = useMemo(() => {
@@ -445,50 +479,56 @@
             const devResults = {};
             const qaResults = {};
 
-            activeSprint.resources.filter(r => r.role === 'DEV').forEach(resource => {
-              const queue = activeSprint.devQueues[resource.id] || [];
-              const resourceHUs = queue.map(id => activeSprint.userStories.find(hu => hu.id === id)).filter(hu => hu && hu.hasDev);
+            const resources = activeSprint.resources || [];
+            const userStories = activeSprint.userStories || [];
+            const devQueues = activeSprint.devQueues || {};
+            const qaQueues = activeSprint.qaQueues || {};
+            const holidays = activeSprint.holidays || [];
+
+            resources.filter(r => r && r.role === 'DEV').forEach(resource => {
+              const queue = devQueues[resource.id] || [];
+              const resourceHUs = queue.map(id => userStories.find(hu => hu && hu.id === id)).filter(hu => hu && hu.hasDev);
 
               let cumulativeHours = 0;
               const startFrom = resource.exceptionStart ? resource.exceptionStart : activeSprint.start;
 
               resourceHUs.forEach((hu) => {
-                const totalDevHours = Object.values(hu.devHours).reduce((a, b) => a + Number(b || 0), 0);
-                const prevCumulativeDays = Math.ceil(cumulativeHours / resource.capacity);
+                const totalDevHours = Object.values(hu.devHours || {}).reduce((a, b) => a + Number(b || 0), 0);
+                const prevCumulativeDays = Math.ceil(cumulativeHours / (resource.capacity || 8));
                 cumulativeHours += totalDevHours;
-                const totalCumulativeDays = Math.ceil(cumulativeHours / resource.capacity);
+                const totalCumulativeDays = Math.ceil(cumulativeHours / (resource.capacity || 8));
 
                 const startDayIndex = prevCumulativeDays + 1;
                 const endDayIndex = totalCumulativeDays;
 
                 devResults[hu.id] = {
                   hours: totalDevHours,
-                  startDate: getNthBusinessDay(startFrom, startDayIndex, activeSprint.holidays),
-                  endDate: getNthBusinessDay(startFrom, endDayIndex, activeSprint.holidays)
+                  startDate: getNthBusinessDay(startFrom, startDayIndex, holidays),
+                  endDate: getNthBusinessDay(startFrom, endDayIndex, holidays)
                 };
               });
             });
 
-            activeSprint.resources.filter(r => r.role === 'QA').forEach(resource => {
-              const queue = activeSprint.qaQueues[resource.id] || [];
-              const resourceHUs = queue.map(id => activeSprint.userStories.find(hu => hu.id === id)).filter(hu => hu && hu.hasQa);
+            resources.filter(r => r && r.role === 'QA').forEach(resource => {
+              const queue = qaQueues[resource.id] || [];
+              const resourceHUs = queue.map(id => userStories.find(hu => hu && hu.id === id)).filter(hu => hu && hu.hasQa);
 
               let cumulativeHours = 0;
               const startFrom = resource.exceptionStart ? resource.exceptionStart : activeSprint.start;
 
               resourceHUs.forEach((hu) => {
-                const totalQaHours = Object.values(hu.qaHours).reduce((a, b) => a + Number(b || 0), 0);
-                const prevCumulativeDays = Math.ceil(cumulativeHours / resource.capacity);
+                const totalQaHours = Object.values(hu.qaHours || {}).reduce((a, b) => a + Number(b || 0), 0);
+                const prevCumulativeDays = Math.ceil(cumulativeHours / (resource.capacity || 4));
                 cumulativeHours += totalQaHours;
-                const totalCumulativeDays = Math.ceil(cumulativeHours / resource.capacity);
+                const totalCumulativeDays = Math.ceil(cumulativeHours / (resource.capacity || 4));
 
                 const startDayIndex = prevCumulativeDays + 1;
                 const endDayIndex = totalCumulativeDays;
 
                 qaResults[hu.id] = {
                   hours: totalQaHours,
-                  startDate: getNthBusinessDay(startFrom, startDayIndex, activeSprint.holidays),
-                  endDate: getNthBusinessDay(startFrom, endDayIndex, activeSprint.holidays)
+                  startDate: getNthBusinessDay(startFrom, startDayIndex, holidays),
+                  endDate: getNthBusinessDay(startFrom, endDayIndex, holidays)
                 };
               });
             });
@@ -497,18 +537,22 @@
           }, [activeSprint]);
 
           const consolidatedStories = useMemo(() => {
-            return activeSprint.userStories.map(hu => {
+            const userStories = activeSprint.userStories || [];
+            const dodList = activeSprint.dodList || [];
+            
+            return userStories.map(hu => {
+              if (!hu) return {};
               const devSched = calculatedSchedules.dev[hu.id];
               const qaSched = calculatedSchedules.qa[hu.id];
 
-              const totalDevHours = hu.hasDev ? Object.values(hu.devHours).reduce((a, b) => a + Number(b || 0), 0) : 0;
-              const totalQaHours = hu.hasQa ? Object.values(hu.qaHours).reduce((a, b) => a + Number(b || 0), 0) : 0;
+              const totalDevHours = hu.hasDev ? Object.values(hu.devHours || {}).reduce((a, b) => a + Number(b || 0), 0) : 0;
+              const totalQaHours = hu.hasQa ? Object.values(hu.qaHours || {}).reduce((a, b) => a + Number(b || 0), 0) : 0;
 
               let finalDeliveryDate = '';
               if (hu.hasQa && qaSched) finalDeliveryDate = qaSched.endDate;
               else if (hu.hasDev && devSched) finalDeliveryDate = devSched.endDate;
 
-              const totalDodItems = activeSprint.dodList.length;
+              const totalDodItems = dodList.length;
               const checkedCount = (hu.dodChecked || []).length;
               const dodProgress = totalDodItems > 0 ? Math.round((checkedCount / totalDodItems) * 100) : 0;
 
@@ -527,19 +571,21 @@
           }, [activeSprint, calculatedSchedules]);
 
           const resourceMetrics = useMemo(() => {
-            return activeSprint.resources.map(res => {
+            const resources = activeSprint.resources || [];
+            return resources.map(res => {
+              if (!res) return {};
               const isDev = res.role === 'DEV';
-              const totalCapacityHours = sprintWorkingDays * res.capacity;
+              const totalCapacityHours = sprintWorkingDays * (res.capacity || 0);
 
               let requiredHours = 0;
               if (isDev) {
                 requiredHours = consolidatedStories
-                  .filter(hu => hu.hasDev && hu.devAssigned === res.id)
-                  .reduce((sum, hu) => sum + hu.totalDevHours, 0);
+                  .filter(hu => hu && hu.hasDev && hu.devAssigned === res.id)
+                  .reduce((sum, hu) => sum + (hu.totalDevHours || 0), 0);
               } else {
                 requiredHours = consolidatedStories
-                  .filter(hu => hu.hasQa && hu.qaAssigned === res.id)
-                  .reduce((sum, hu) => sum + hu.totalQaHours, 0);
+                  .filter(hu => hu && hu.hasQa && hu.qaAssigned === res.id)
+                  .reduce((sum, hu) => sum + (hu.totalQaHours || 0), 0);
               }
 
               const balanceHours = totalCapacityHours - requiredHours;
@@ -574,54 +620,93 @@
 
           const parseWorkbookData = (workbook, originName = 'Excel') => {
             try {
-              // Determinar si es un reporte de base de datos total o un reporte parcial de horas (DEV o QA)
               const sheetNamesLower = workbook.SheetNames.map(n => n.toLowerCase());
+              
+              // Determinar si es un reporte parcial (DEV o QA) o una base de datos unificada completa
               const isDevOnly = sheetNamesLower.some(n => n.includes('horas_dev') || n === 'dev') && !sheetNamesLower.some(n => n.includes('capacidad') || n.includes('balance'));
               const isQaOnly = sheetNamesLower.some(n => n.includes('horas_qa') || n === 'qa') && !sheetNamesLower.some(n => n.includes('capacidad') || n.includes('balance'));
 
               if (isDevOnly || isQaOnly) {
-                // FLUJO FUSIÓN INTELIGENTE: Conserva la base de datos principal y solo sobrescribe las horas de las HUs
                 addLog(`Se detectó reporte parcial de ${isDevOnly ? 'Desarrollo (DEV)' : 'Aseguramiento (QA)'}. Iniciando fusión inteligente...`);
                 let countMerged = 0;
 
-                const firstSheetName = workbook.SheetNames[0];
-                const sheet = workbook.Sheets[firstSheetName];
+                const sheetName = workbook.SheetNames.find(n => n.toLowerCase().includes('dev') || n.toLowerCase().includes('qa'));
+                const sheet = workbook.Sheets[sheetName];
                 const rows = XLSX.utils.sheet_to_json(sheet);
 
                 setSprints(prev => {
                   const updatedSprints = { ...prev };
+                  if (!updatedSprints[activeSprintId]) return prev;
+                  
                   const targetSprint = { ...updatedSprints[activeSprintId] };
+                  if (!Array.isArray(targetSprint.userStories)) targetSprint.userStories = [];
 
                   rows.forEach(row => {
                     const id = String(row['ID HU'] || row['ID'] || '').trim();
                     if (!id) return;
 
-                    const story = targetSprint.userStories.find(hu => hu.id === id);
+                    const story = targetSprint.userStories.find(hu => hu && hu.id === id);
                     if (story) {
+                      // ASIGNACIÓN RESILIENTE: Busca coincidencia por ID numérico de recurso o nombre
+                      const assignedCell = row['ID DEV Asignado'] || row['ID QA Asignado'] || row['Desarrollador Asignado'] || row['Asegurador Asignado'] || '';
+                      let targetResId = '';
+                      
+                      if (assignedCell) {
+                        const cleanCell = String(assignedCell).trim();
+                        const matchById = (targetSprint.resources || []).find(r => String(r.id) === cleanCell);
+                        if (matchById) {
+                          targetResId = matchById.id;
+                        } else {
+                          const matchByName = (targetSprint.resources || []).find(r => r.name.toLowerCase().includes(cleanCell.toLowerCase()) || cleanCell.toLowerCase().includes(r.name.toLowerCase()));
+                          if (matchByName) targetResId = matchByName.id;
+                        }
+                      }
+
                       if (isDevOnly) {
                         story.hasDev = true;
+                        if (targetResId) story.devAssigned = targetResId;
                         story.devHours = {
-                          analisis: parseFloat(row['Análisis'] || row['Analisis'] || row['analisis']) || 0,
-                          diseño: parseFloat(row['Diseño'] || row['Diseno'] || row['diseño']) || 0,
-                          casosPrueba: parseFloat(row['Casos Prueba'] || row['Casos de Prueba'] || row['casosPrueba']) || 0,
-                          pUnitarias: parseFloat(row['P. Unitarias'] || row['Pruebas Unitarias'] || row['pUnitarias']) || 0,
-                          desarrollo: parseFloat(row['Desarrollo'] || row['desarrollo']) || 0,
-                          documentacion: parseFloat(row['Documentación'] || row['Documentacion'] || row['documentacion']) || 0
+                          analisis: parseFloat(row['Análisis'] || row['Analisis'] || 0) || 0,
+                          diseño: parseFloat(row['Diseño'] || row['Diseno'] || 0) || 0,
+                          casosPrueba: parseFloat(row['Casos Prueba'] || row['Casos de Prueba'] || 0) || 0,
+                          pUnitarias: parseFloat(row['P. Unitarias'] || row['Pruebas Unitarias'] || 0) || 0,
+                          desarrollo: parseFloat(row['Desarrollo'] || 0) || 0,
+                          documentacion: parseFloat(row['Documentación'] || row['Documentacion'] || 0) || 0
                         };
                       } else {
                         story.hasQa = true;
+                        if (targetResId) story.qaAssigned = targetResId;
                         story.qaHours = {
-                          planeacion: parseFloat(row['Planeación'] || row['Planeacion'] || row['planeacion']) || 0,
-                          diseño: parseFloat(row['Diseño'] || row['Diseno'] || row['diseño']) || 0,
-                          ejecucion: parseFloat(row['Ejecución'] || row['Ejecucion'] || row['ejecucion']) || 0,
-                          cierre: parseFloat(row['Cierre'] || row['cierre']) || 0,
-                          entrega: parseFloat(row['Entrega'] || row['entrega']) || 0,
-                          regresion: parseFloat(row['Regresion'] || row['Regresión'] || row['regresion']) || 0
+                          planeacion: parseFloat(row['Planeación'] || row['Planeacion'] || 0) || 0,
+                          diseño: parseFloat(row['Diseño'] || row['Diseno'] || 0) || 0,
+                          ejecucion: parseFloat(row['Ejecución'] || row['Ejecucion'] || 0) || 0,
+                          cierre: parseFloat(row['Cierre'] || 0) || 0,
+                          entrega: parseFloat(row['Entrega'] || 0) || 0,
+                          regresion: parseFloat(row['Regresion'] || row['Regresión'] || 0) || 0
                         };
                       }
                       countMerged++;
                     }
                   });
+
+                  // Reconstruir colas de prioridad de manera segura
+                  const devQueues = {};
+                  const qaQueues = {};
+                  (targetSprint.resources || []).forEach(res => {
+                    if (res.role === 'DEV') devQueues[res.id] = [];
+                    if (res.role === 'QA') qaQueues[res.id] = [];
+                  });
+
+                  targetSprint.userStories.forEach(st => {
+                    if (st.hasDev && st.devAssigned && devQueues[st.devAssigned]) {
+                      devQueues[st.devAssigned].push(st.id);
+                    }
+                    if (st.hasQa && st.qaAssigned && qaQueues[st.qaAssigned]) {
+                      qaQueues[st.qaAssigned].push(st.id);
+                    }
+                  });
+                  targetSprint.devQueues = devQueues;
+                  targetSprint.qaQueues = qaQueues;
 
                   return { ...prev, [activeSprintId]: targetSprint };
                 });
@@ -631,7 +716,7 @@
                 return;
               }
 
-              // FLUJO IMPORTACIÓN BASE DE DATOS COMPLETA
+              // FLUJO IMPORTACIÓN BASE DE DATOS COMPLETA DE 4 VÍAS
               let activeId = 'Sprint 59';
               let huSheetName = workbook.SheetNames.find(n => n.toLowerCase().includes('hus sprint') || n.toLowerCase().includes('hu'));
               let capSheetName = workbook.SheetNames.find(n => n.toLowerCase().includes('capacidad') || n.toLowerCase().includes('balance'));
@@ -641,9 +726,7 @@
               if (!huSheetName) huSheetName = workbook.SheetNames[0];
 
               const sprintMatch = huSheetName.match(/Sprint\s*(\d+)/i);
-              if (sprintMatch) {
-                activeId = `Sprint ${sprintMatch[1]}`;
-              }
+              if (sprintMatch) activeId = `Sprint ${sprintMatch[1]}`;
 
               const parsedSprints = {};
               parsedSprints[activeId] = {
@@ -704,7 +787,7 @@
                     if (!isNaN(colNum)) {
                       const name = rowStr[1];
                       const role = foundDev ? 'DEV' : 'QA';
-                      const id = String(colNum + (foundQa ? 10 : 0));
+                      const id = String(colNum);
 
                       resourcesList.push({
                         id, name, role, capacity: role === 'DEV' ? 8 : 4, exceptionStart: ''
@@ -713,9 +796,7 @@
                   }
                 });
 
-                if (resourcesList.length > 0) {
-                  active.resources = resourcesList;
-                }
+                if (resourcesList.length > 0) active.resources = resourcesList;
               }
 
               // Parsear HUs
@@ -758,16 +839,9 @@
                     if (foundQaRes) qaAssigned = foundQaRes.id;
                   });
 
-                  if (!devAssigned) {
-                    if (personUpper.includes('BRIYITH')) devAssigned = '1';
-                    else if (personUpper.includes('LUIS')) devAssigned = '2';
-                  }
-                  if (!qaAssigned) {
-                    if (personUpper.includes('JORDAN')) {
-                      const jordanRes = active.resources.find(r => r.name.toUpperCase().includes('JORDAN'));
-                      qaAssigned = jordanRes ? jordanRes.id : '11';
-                    }
-                  }
+                  if (!devAssigned && personUpper.includes('BRIYITH')) devAssigned = '1';
+                  if (!devAssigned && personUpper.includes('LUIS')) devAssigned = '2';
+                  if (!qaAssigned && personUpper.includes('JORDAN')) qaAssigned = '3';
 
                   active.userStories.push({
                     id,
@@ -797,12 +871,12 @@
                   if (story) {
                     story.hasDev = true;
                     story.devHours = {
-                      analisis: parseFloat(row['Análisis'] || row['Analisis'] || row['analisis']) || 0,
-                      diseño: parseFloat(row['Diseño'] || row['Diseno'] || row['diseño']) || 0,
-                      casosPrueba: parseFloat(row['Casos Prueba'] || row['Casos de Prueba'] || row['casosPrueba']) || 0,
-                      pUnitarias: parseFloat(row['P. Unitarias'] || row['Pruebas Unitarias'] || row['pUnitarias']) || 0,
-                      desarrollo: parseFloat(row['Desarrollo'] || row['desarrollo']) || 0,
-                      documentacion: parseFloat(row['Documentación'] || row['Documentacion'] || row['documentacion']) || 0
+                      analisis: parseFloat(row['Análisis'] || row['Analisis'] || 0) || 0,
+                      diseño: parseFloat(row['Diseño'] || row['Diseno'] || 0) || 0,
+                      casosPrueba: parseFloat(row['Casos Prueba'] || row['Casos de Prueba'] || 0) || 0,
+                      pUnitarias: parseFloat(row['P. Unitarias'] || row['Pruebas Unitarias'] || 0) || 0,
+                      desarrollo: parseFloat(row['Desarrollo'] || 0) || 0,
+                      documentacion: parseFloat(row['Documentación'] || row['Documentacion'] || 0) || 0
                     };
                   }
                 });
@@ -818,12 +892,12 @@
                   if (story) {
                     story.hasQa = true;
                     story.qaHours = {
-                      planeacion: parseFloat(row['Planeación'] || row['Planeacion'] || row['planeacion']) || 0,
-                      diseño: parseFloat(row['Diseño'] || row['Diseno'] || row['diseño']) || 0,
-                      ejecucion: parseFloat(row['Ejecución'] || row['Ejecucion'] || row['ejecucion']) || 0,
-                      cierre: parseFloat(row['Cierre'] || row['cierre']) || 0,
-                      entrega: parseFloat(row['Entrega'] || row['entrega']) || 0,
-                      regresion: parseFloat(row['Regresion'] || row['Regresión'] || row['regresion']) || 0
+                      planeacion: parseFloat(row['Planeación'] || row['Planeacion'] || 0) || 0,
+                      diseño: parseFloat(row['Diseño'] || row['Diseno'] || 0) || 0,
+                      ejecucion: parseFloat(row['Ejecución'] || row['Ejecucion'] || 0) || 0,
+                      cierre: parseFloat(row['Cierre'] || 0) || 0,
+                      entrega: parseFloat(row['Entrega'] || 0) || 0,
+                      regresion: parseFloat(row['Regresion'] || row['Regresión'] || 0) || 0
                     };
                   }
                 });
@@ -870,9 +944,7 @@
 
           const parseExcelDate = (excelVal) => {
             if (!excelVal) return '';
-            if (excelVal instanceof Date) {
-              return excelVal.toISOString().split('T')[0];
-            }
+            if (excelVal instanceof Date) return excelVal.toISOString().split('T')[0];
             if (typeof excelVal === 'number') {
               const date = new Date(Date.UTC(0, 0, excelVal - 1));
               return date.toISOString().split('T')[0];
@@ -889,7 +961,6 @@
               showFeedback("Función no soportada en Safari/Firefox. Use Chrome o Edge.", "error");
               return;
             }
-
             try {
               const [handle] = await window.showOpenFilePicker({
                 types: [{
@@ -911,7 +982,6 @@
                 parseWorkbookData(workbook, handle.name);
               };
               reader.readAsBinaryString(file);
-
             } catch (err) {
               addLog(`Vinculación cancelada o fallida: ${err.message}`);
             }
@@ -922,11 +992,9 @@
               showFeedback("No hay ningún archivo de SharePoint vinculado. Descargue manualmente.", "error");
               return;
             }
-
             try {
               addLog("Generando nueva estructura binaria de sobrescritura...");
               const blob = generateExcelBlob();
-
               const writable = await fileHandle.createWritable();
               await writable.write(blob);
               await writable.close();
@@ -963,13 +1031,14 @@
 
             // 1. Capacidad-Balance
             const capData = resourceMetrics.map(r => ({
+              "ID Recurso": r.id,
               "Nombre": r.name,
               "Rol": r.role,
               "Horas Disponibles por Día": r.capacity,
               "Capacidad Disponible Total (H)": r.totalCapacityHours,
               "Horas Requeridas Asignadas": r.requiredHours,
               "Balance Horas Remanentes": r.balanceHours,
-              "Ocupación %": `${r.occupationPercent.toFixed(1)}%`,
+              "Ocupación %": `${(r.occupationPercent || 0).toFixed(1)}%`,
               "Estado de Ocupación": r.statusText
             }));
             const wsCap = XLSX.utils.json_to_sheet(capData);
@@ -993,13 +1062,14 @@
             const devRows = consolidatedStories.filter(h => h.hasDev).map(h => ({
               "ID HU": h.id,
               "Historia": h.name,
+              "ID DEV Asignado": h.devAssigned || '',
               "Desarrollador Asignado": activeSprint.resources.find(r => r.id === h.devAssigned)?.name || 'Sin Asignar',
-              "Análisis": h.devHours.analisis,
-              "Diseño": h.devHours.diseño,
-              "Casos Prueba": h.devHours.casosPrueba,
-              "P. Unitarias": h.devHours.pUnitarias,
-              "Desarrollo": h.devHours.desarrollo,
-              "Documentación": h.devHours.documentacion,
+              "Análisis": h.devHours?.analisis || 0,
+              "Diseño": h.devHours?.diseño || 0,
+              "Casos Prueba": h.devHours?.casosPrueba || 0,
+              "P. Unitarias": h.devHours?.pUnitarias || 0,
+              "Desarrollo": h.devHours?.desarrollo || 0,
+              "Documentación": h.devHours?.documentacion || 0,
               "Total h DEV": h.totalDevHours,
               "Fecha estimada FIN": h.devEndDate
             }));
@@ -1010,13 +1080,14 @@
             const qaRows = consolidatedStories.filter(h => h.hasQa).map(h => ({
               "ID HU": h.id,
               "Historia": h.name,
+              "ID QA Asignado": h.qaAssigned || '',
               "Asegurador Asignado": activeSprint.resources.find(r => r.id === h.qaAssigned)?.name || 'Sin Asignar',
-              "Planeación": h.qaHours.planeacion,
-              "Diseño": h.qaHours.diseño,
-              "Ejecución": h.qaHours.ejecucion,
-              "Cierre": h.qaHours.cierre,
-              "Entrega": h.qaHours.entrega,
-              "Regresion": h.qaHours.regresion,
+              "Planeación": h.qaHours?.planeacion || 0,
+              "Diseño": h.qaHours?.diseño || 0,
+              "Ejecución": h.qaHours?.ejecucion || 0,
+              "Cierre": h.qaHours?.cierre || 0,
+              "Entrega": h.qaHours?.entrega || 0,
+              "Regresion": h.qaHours?.regresion || 0,
               "Total QA": h.totalQaHours,
               "Fecha Estimada FIN": h.qaEndDate
             }));
@@ -1050,9 +1121,9 @@
             return new Blob([buf], { type: 'application/octet-stream' });
           };
 
-          // --- SISTEMA DE DESCARGA DE PLANTILLAS DISTRIBUIDAS ---
+          // DESCARGA DE PLANTILLAS DISTRIBUIDAS (Con Glosario de IDs de Recursos)
           const handleDownloadTemplate = (roleType) => {
-            const wb = XLSX.utils.book_new();
+            const wb = window.XLSX.utils.book_new();
             let data = [];
             let sheetName = "";
             let fileName = "";
@@ -1063,51 +1134,56 @@
               data = consolidatedStories.filter(h => h.hasDev).map(h => ({
                 "ID HU": h.id,
                 "Historia": h.name,
+                "ID DEV Asignado": h.devAssigned || '',
                 "Desarrollador Asignado": activeSprint.resources.find(r => r.id === h.devAssigned)?.name || '',
-                "Análisis": h.devHours.analisis,
-                "Diseño": h.devHours.diseño,
-                "Casos Prueba": h.devHours.casosPrueba,
-                "P. Unitarias": h.devHours.pUnitarias,
-                "Desarrollo": h.devHours.desarrollo,
-                "Documentación": h.devHours.documentacion
+                "Análisis": h.devHours?.analisis || 0,
+                "Diseño": h.devHours?.diseño || 0,
+                "Casos Prueba": h.devHours?.casosPrueba || 0,
+                "P. Unitarias": h.devHours?.pUnitarias || 0,
+                "Desarrollo": h.devHours?.desarrollo || 0,
+                "Documentación": h.devHours?.documentacion || 0
               }));
-
-              if (data.length === 0) {
-                data.push({
-                  "ID HU": "Escriba ID aquí (Ej: 5536)",
-                  "Historia": "Ejemplo de automatización",
-                  "Desarrollador Asignado": "Nombre del Dev",
-                  "Análisis": 0, "Diseño": 0, "Casos Prueba": 0, "P. Unitarias": 0, "Desarrollo": 0, "Documentación": 0
-                });
-              }
             } else {
               sheetName = "Horas_QA";
               fileName = `Plantilla_Horas_QA_${activeSprintId}.xlsx`;
               data = consolidatedStories.filter(h => h.hasQa).map(h => ({
                 "ID HU": h.id,
                 "Historia": h.name,
+                "ID QA Asignado": h.qaAssigned || '',
                 "Asegurador Asignado": activeSprint.resources.find(r => r.id === h.qaAssigned)?.name || '',
-                "Planeación": h.qaHours.planeacion,
-                "Diseño": h.qaHours.diseño,
-                "Ejecución": h.qaHours.ejecucion,
-                "Cierre": h.qaHours.cierre,
-                "Entrega": h.qaHours.entrega,
-                "Regresion": h.qaHours.regresion
+                "Planeación": h.qaHours?.planeacion || 0,
+                "Diseño": h.qaHours?.diseño || 0,
+                "Ejecución": h.qaHours?.ejecucion || 0,
+                "Cierre": h.qaHours?.cierre || 0,
+                "Entrega": h.qaHours?.entrega || 0,
+                "Regresion": h.qaHours?.regresion || 0
               }));
-
-              if (data.length === 0) {
-                data.push({
-                  "ID HU": "Escriba ID aquí (Ej: 5536)",
-                  "Historia": "Ejemplo de automatización",
-                  "Asegurador Asignado": "Nombre del QA",
-                  "Planeación": 0, "Diseño": 0, "Ejecución": 0, "Cierre": 0, "Entrega": 0, "Regresion": 0
-                });
-              }
             }
 
-            const ws = XLSX.utils.json_to_sheet(data);
-            XLSX.utils.book_append_sheet(wb, ws, sheetName);
-            const excelBuf = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
+            if (data.length === 0) {
+              data.push({
+                "ID HU": "5536",
+                "Historia": "Ejemplo de automatización",
+                "ID DEV Asignado": "1",
+                "Desarrollador Asignado": "Briyith Castaño",
+                "Análisis": 0, "Diseño": 0, "Casos Prueba": 0, "P. Unitarias": 0, "Desarrollo": 0, "Documentación": 0
+              });
+            }
+
+            // Inyectar listado de equipo como glosario de apoyo en la plantilla
+            const teamGlossary = activeSprint.resources.map(r => ({
+              "ID Recurso": r.id,
+              "Nombre": r.name,
+              "Rol": r.role,
+              "Capacidad (H/Día)": r.capacity
+            }));
+
+            const ws = window.XLSX.utils.json_to_sheet(data);
+            const wsTeam = window.XLSX.utils.json_to_sheet(teamGlossary);
+            window.XLSX.utils.book_append_sheet(wb, ws, sheetName);
+            window.XLSX.utils.book_append_sheet(wb, wsTeam, "Glosario_Equipo");
+
+            const excelBuf = window.XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
             const buf = new ArrayBuffer(excelBuf.length);
             const view = new Uint8Array(buf);
             for (let i = 0; i < excelBuf.length; i++) view[i] = excelBuf.charCodeAt(i) & 0xFF;
@@ -1281,18 +1357,18 @@
             setGlobalBacklog(prev => {
               if (prev.some(hu => hu.id === story.id)) return prev;
               return [...prev, {
-                id: story.id, name: story.name, points: story.points, hasDev: story.hasDev, hasQa: story.hasQa, devHours: { ...story.devHours }, qaHours: { ...story.qaHours }
+                id: story.id, name: story.name, points: story.points, hasDev: story.hasDev, hasQa: story.hasQa, devHours: { ...(story.devHours || {}) }, qaHours: { ...(story.qaHours || {}) }
               }];
             });
 
             setSprints(prev => {
               const updatedSprint = { ...prev[activeSprintId] };
-              updatedSprint.userStories = updatedSprint.userStories.filter(hu => hu.id !== story.id);
-              Object.keys(updatedSprint.devQueues).forEach(resId => {
-                updatedSprint.devQueues[resId] = updatedSprint.devQueues[resId].filter(id => id !== story.id);
+              updatedSprint.userStories = updatedSprint.userStories.filter(hu => hu && hu.id !== story.id);
+              Object.keys(updatedSprint.devQueues || {}).forEach(resId => {
+                updatedSprint.devQueues[resId] = (updatedSprint.devQueues[resId] || []).filter(id => id !== story.id);
               });
-              Object.keys(updatedSprint.qaQueues).forEach(resId => {
-                updatedSprint.qaQueues[resId] = updatedSprint.qaQueues[resId].filter(id => id !== story.id);
+              Object.keys(updatedSprint.qaQueues || {}).forEach(resId => {
+                updatedSprint.qaQueues[resId] = (updatedSprint.qaQueues[resId] || []).filter(id => id !== story.id);
               });
               return { ...prev, [activeSprintId]: updatedSprint };
             });
@@ -1301,17 +1377,18 @@
           };
 
           const integrateFromBacklog = (storyId) => {
-            const backlogHu = globalBacklog.find(hu => hu.id === storyId);
+            const backlogHu = globalBacklog.find(hu => hu && hu.id === storyId);
             if (!backlogHu) return;
 
             setSprints(prev => {
               const updatedSprint = { ...prev[activeSprintId] };
+              if (!Array.isArray(updatedSprint.userStories)) updatedSprint.userStories = [];
               const newSprintHu = { ...backlogHu, devAssigned: '', qaAssigned: '', status: 'Planeada', delayCategory: '', delayReason: '', dodChecked: [] };
               updatedSprint.userStories.push(newSprintHu);
               return { ...prev, [activeSprintId]: updatedSprint };
             });
 
-            setGlobalBacklog(prev => prev.filter(hu => hu.id !== storyId));
+            setGlobalBacklog(prev => prev.filter(hu => hu && hu.id !== storyId));
             showFeedback(`HU #${storyId} integrada al ${activeSprintId}`, 'success');
             setActiveTab('consolidado');
           };
@@ -1340,6 +1417,92 @@
             showFeedback('Prioridad reordenada y cascada recalculada', 'success');
           };
 
+          const handleOpenAddResourceModal = () => {
+            // Generar ID sugerido secuencialmente
+            const currentResources = activeSprint.resources || [];
+            const ids = currentResources.map(r => parseInt(r.id)).filter(id => !isNaN(id));
+            const nextId = ids.length > 0 ? Math.max(...ids) + 1 : 1;
+
+            setResourceForm({
+              id: String(nextId),
+              name: '',
+              role: 'DEV',
+              capacity: 8,
+              exceptionStart: ''
+            });
+            setEditingResourceId(null);
+            setModalMode('add');
+            setIsResourceModalOpen(true);
+          };
+
+          const handleOpenEditResourceModal = (res) => {
+            setResourceForm({
+              id: res.id,
+              name: res.name,
+              role: res.role,
+              capacity: res.capacity,
+              exceptionStart: res.exceptionStart || ''
+            });
+            setEditingResourceId(res.id);
+            setModalMode('edit');
+            setIsResourceModalOpen(true);
+          };
+
+          const saveResource = (e) => {
+            e.preventDefault();
+            if (!resourceForm.id.trim()) return showFeedback('ID de recurso requerido', 'error');
+            if (!resourceForm.name.trim()) return showFeedback('Nombre de recurso requerido', 'error');
+
+            setSprints(prev => {
+              const active = { ...prev[activeSprintId] };
+              if (!Array.isArray(active.resources)) active.resources = [];
+
+              if (modalMode === 'add') {
+                if (active.resources.some(r => String(r.id) === String(resourceForm.id))) {
+                  showFeedback(`El ID de Recurso #${resourceForm.id} ya existe`, 'error');
+                  return prev;
+                }
+                active.resources.push(resourceForm);
+                if (resourceForm.role === 'DEV') active.devQueues[resourceForm.id] = [];
+                else active.qaQueues[resourceForm.id] = [];
+              } else {
+                active.resources = active.resources.map(r => r.id === editingResourceId ? resourceForm : r);
+              }
+              return { ...prev, [activeSprintId]: active };
+            });
+
+            setIsResourceModalOpen(false);
+            showFeedback('Recurso guardado con éxito', 'success');
+          };
+
+          const handleDeleteResource = (resId) => {
+            setConfirmState({
+              isOpen: true,
+              title: 'Eliminar Miembro del Equipo',
+              message: `¿Está seguro de que desea eliminar a este miembro? Se perderá su asignación en las historias de este Sprint.`,
+              onConfirm: () => {
+                setSprints(prev => {
+                  const active = { ...prev[activeSprintId] };
+                  active.resources = (active.resources || []).filter(r => r.id !== resId);
+                  
+                  // Desvincular de HUs
+                  active.userStories = (active.userStories || []).map(hu => {
+                    if (hu.devAssigned === resId) { hu.devAssigned = ''; hu.hasDev = false; }
+                    if (hu.qaAssigned === resId) { hu.qaAssigned = ''; hu.hasQa = false; }
+                    return hu;
+                  });
+
+                  if (active.devQueues) delete active.devQueues[resId];
+                  if (active.qaQueues) delete active.qaQueues[resId];
+
+                  return { ...prev, [activeSprintId]: active };
+                });
+                showFeedback('Recurso eliminado del Sprint', 'success');
+                setConfirmState(prev => ({ ...prev, isOpen: false }));
+              }
+            });
+          };
+
           const handleInputChange = (field, val) => {
             setHuForm(prev => ({ ...prev, [field]: val }));
           };
@@ -1357,7 +1520,19 @@
 
           const handleOpenEditModal = (hu) => {
             setHuForm({
-              id: hu.id, name: hu.name, points: hu.points, devAssigned: hu.devAssigned || '', qaAssigned: hu.qaAssigned || '', hasDev: hu.hasDev, hasQa: hu.hasQa, status: hu.status || 'Planeada', delayCategory: hu.delayCategory || '', delayReason: hu.delayReason || '', dodChecked: hu.dodChecked || [], devHours: { ...hu.devHours }, qaHours: { ...hu.qaHours }
+              id: hu.id,
+              name: hu.name,
+              points: hu.points,
+              devAssigned: hu.devAssigned || '',
+              qaAssigned: hu.qaAssigned || '',
+              hasDev: hu.hasDev,
+              hasQa: hu.hasQa,
+              status: hu.status || 'Planeada',
+              delayCategory: hu.delayCategory || '',
+              delayReason: hu.delayReason || '',
+              dodChecked: hu.dodChecked || [],
+              devHours: { ...initialFormState.devHours, ...(hu.devHours || {}) },
+              qaHours: { ...initialFormState.qaHours, ...(hu.qaHours || {}) }
             });
             setEditingStoryId(hu.id);
             setModalMode('edit');
@@ -1367,7 +1542,7 @@
           const toggleDodItem = (storyId, item) => {
             setSprints(prev => {
               const sprint = { ...prev[activeSprintId] };
-              sprint.userStories = sprint.userStories.map(hu => {
+              sprint.userStories = (sprint.userStories || []).map(hu => {
                 if (hu.id !== storyId) return hu;
                 const currentChecked = hu.dodChecked || [];
                 const updatedChecked = currentChecked.includes(item) ? currentChecked.filter(i => i !== item) : [...currentChecked, item];
@@ -1383,12 +1558,14 @@
             if (!huForm.name.trim()) return showFeedback('Nombre requerido', 'error');
 
             const sprint = sprints[activeSprintId];
-            if (modalMode === 'add' && sprint.userStories.some(hu => hu.id === huForm.id)) {
+            if (modalMode === 'add' && sprint.userStories.some(hu => hu && hu.id === huForm.id)) {
               return showFeedback(`El ID #${huForm.id} ya se encuentra asignado`, 'error');
             }
 
             setSprints(prev => {
               const active = { ...prev[activeSprintId] };
+              if (!Array.isArray(active.userStories)) active.userStories = [];
+
               if (modalMode === 'add') {
                 active.userStories.push(huForm);
                 if (huForm.hasDev && huForm.devAssigned) {
@@ -1398,8 +1575,8 @@
                   active.qaQueues[huForm.qaAssigned] = [...(active.qaQueues[huForm.qaAssigned] || []), huForm.id];
                 }
               } else {
-                const oldStory = active.userStories.find(hu => hu.id === editingStoryId);
-                active.userStories = active.userStories.map(hu => hu.id === editingStoryId ? huForm : hu);
+                const oldStory = active.userStories.find(hu => hu && hu.id === editingStoryId);
+                active.userStories = active.userStories.map(hu => hu && hu.id === editingStoryId ? huForm : hu);
 
                 if (oldStory.devAssigned !== huForm.devAssigned || !huForm.hasDev) {
                   if (oldStory.devAssigned) active.devQueues[oldStory.devAssigned] = (active.devQueues[oldStory.devAssigned] || []).filter(id => id !== editingStoryId);
@@ -1424,11 +1601,11 @@
               onConfirm: () => {
                 setSprints(prev => {
                   const sprint = { ...prev[activeSprintId] };
-                  sprint.userStories = sprint.userStories.filter(hu => hu.id !== id);
-                  Object.keys(sprint.devQueues).forEach(key => {
+                  sprint.userStories = (sprint.userStories || []).filter(hu => hu && hu.id !== id);
+                  Object.keys(sprint.devQueues || {}).forEach(key => {
                     sprint.devQueues[key] = (sprint.devQueues[key] || []).filter(qid => qid !== id);
                   });
-                  Object.keys(sprint.qaQueues).forEach(key => {
+                  Object.keys(sprint.qaQueues || {}).forEach(key => {
                     sprint.qaQueues[key] = (sprint.qaQueues[key] || []).filter(qid => qid !== id);
                   });
                   return { ...prev, [activeSprintId]: sprint };
@@ -1443,7 +1620,7 @@
             setConfirmState({
               isOpen: true, title: 'Descartar del Backlog', message: `¿Eliminar la HU #${id} del backlog?`,
               onConfirm: () => {
-                setGlobalBacklog(prev => prev.filter(hu => hu.id !== id));
+                setGlobalBacklog(prev => prev.filter(hu => hu && hu.id !== id));
                 showFeedback('Eliminada del backlog', 'success');
                 setConfirmState(prev => ({ ...prev, isOpen: false }));
               }
@@ -1489,82 +1666,6 @@
             return count;
           }, [createSprintConfig]);
 
-          // --- VISTA DE BIENVENIDA / INGESTA ---
-          if (!sprints) {
-            return (
-              <div className="min-h-screen bg-slate-900 flex flex-col justify-center items-center p-6 text-white">
-                <div className="max-w-xl w-full bg-slate-800 rounded-3xl p-8 border border-slate-700/60 shadow-2xl space-y-8 animate-fade-in text-center">
-                  <div className="flex flex-col items-center space-y-3">
-                    <div className="bg-emerald-600/20 text-emerald-400 p-4 rounded-2xl border border-emerald-500/30">
-                      <Icons.FileExcel />
-                    </div>
-                    <h1 className="text-2xl font-black tracking-tight">Portal de Planeación Ágil</h1>
-                    <p className="text-slate-400 text-xs max-w-sm">Cargue su archivo SharePoint o consolide reportes parciales para iniciar</p>
-                  </div>
-
-                  <div 
-                    onDragOver={handleDragOver}
-                    onDrop={handleDropExcel}
-                    className="border-2 border-dashed border-slate-700 hover:border-emerald-500 rounded-2xl p-8 bg-slate-800/50 hover:bg-slate-800 transition cursor-pointer flex flex-col items-center justify-center space-y-4"
-                  >
-                    <div className="text-slate-500">
-                      <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                      </svg>
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-sm">Arrastre y suelte su Excel aquí</h4>
-                      <p className="text-[10px] text-slate-500 mt-1">Soporta base de datos unificada, reporte 'Horas_DEV' o 'Horas_QA'</p>
-                    </div>
-                    <label className="px-3.5 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-xl text-xs font-bold transition cursor-pointer">
-                      Seleccionar Archivo Manual
-                      <input 
-                        type="file" 
-                        accept=".xlsx, .xls" 
-                        onChange={(e) => {
-                          const file = e.target.files[0];
-                          if (!file) return;
-                          const reader = new FileReader();
-                          reader.onload = (evt) => {
-                            const workbook = XLSX.read(evt.target.result, { type: 'binary', cellDates: true });
-                            parseWorkbookData(workbook, file.name);
-                          };
-                          reader.readAsBinaryString(file);
-                        }} 
-                        className="hidden" 
-                      />
-                    </label>
-                  </div>
-
-                  {window.showOpenFilePicker && (
-                    <div className="space-y-3">
-                      <div className="relative flex py-1 items-center">
-                        <div className="flex-grow border-t border-slate-700/60"></div>
-                        <span className="flex-shrink mx-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider">O vinculación directa</span>
-                        <div className="flex-grow border-t border-slate-700/60"></div>
-                      </div>
-                      <button
-                        onClick={handleLinkLocalExcel}
-                        className="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-2xl text-xs font-black tracking-wider uppercase transition shadow-lg shadow-emerald-600/10"
-                      >
-                        Vincular Excel de SharePoint (.xlsx)
-                      </button>
-                    </div>
-                  )}
-
-                  <div className="text-center">
-                    <button 
-                      onClick={() => setSprints(demoSprintsData)}
-                      className="text-slate-500 hover:text-slate-300 transition text-[11px] underline"
-                    >
-                      Usar Escenario de Demostración (Demo Sandbox)
-                    </button>
-                  </div>
-                </div>
-              </div>
-            );
-          }
-
           return (
             <div className="min-h-screen bg-slate-50 text-slate-800 font-sans antialiased pb-12">
               {feedbackMessage && (
@@ -1589,11 +1690,11 @@
                           </span>
                         ) : (
                           <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-amber-500 text-white flex items-center gap-1">
-                            Local Caching
+                            Local Caching (Healed)
                           </span>
                         )}
                       </div>
-                      <p className="text-slate-400 text-xs mt-0.5">Seguimiento de DoD, Retrasos y Fusión de Horas en Excel</p>
+                      <p className="text-slate-400 text-xs mt-0.5">Seguimiento de DoD, Retrasos y Fusión Inteligente de Horas</p>
                     </div>
                   </div>
                   
@@ -1610,7 +1711,7 @@
                       <button 
                         onClick={handleDownloadBackup} 
                         className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-lg"
-                        title="Descarga el archivo Excel estructurado de 4 vías"
+                        title="Descarga el archivo Excel estructurado"
                       >
                         <Icons.CloudSync />
                         Descargar Base de Datos
@@ -1646,7 +1747,6 @@
                       <p className="text-xs text-slate-500">Métricas procesadas dinámicamente según tus tablas de Excel</p>
                     </div>
                     
-                    {/* ACCIONES DE COLABORACIÓN */}
                     <div className="flex flex-wrap gap-2 w-full sm:w-auto">
                       <button 
                         onClick={() => handleDownloadTemplate('DEV')}
@@ -1681,10 +1781,10 @@
                           <div>
                             <div className="flex justify-between text-xs text-slate-500 mb-1">
                               <span>Uso de Capacidad</span>
-                              <span className="font-semibold text-slate-800">{res.occupationPercent.toFixed(1)}%</span>
+                              <span className="font-semibold text-slate-800">{(res.occupationPercent || 0).toFixed(1)}%</span>
                             </div>
                             <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
-                              <div className={`h-full rounded-full transition-all duration-500 ${res.progressColor}`} style={{ width: `${Math.min(res.occupationPercent, 100)}%` }}></div>
+                              <div className={`h-full rounded-full transition-all duration-500 ${res.progressColor}`} style={{ width: `${Math.min(res.occupationPercent || 0, 100)}%` }}></div>
                             </div>
                           </div>
                           <div className="grid grid-cols-3 text-center bg-white border border-slate-100 rounded-lg p-2 text-xs gap-1">
@@ -1707,11 +1807,12 @@
                   </div>
                 </section>
 
-                {/* TABS SELECTOR */}
+                {}
                 <div className="flex flex-col sm:flex-row gap-2 border-b border-slate-200 pb-px">
                   <button onClick={() => setActiveTab('consolidado')} className={`px-5 py-3 font-semibold text-sm rounded-t-xl transition flex items-center gap-2 ${activeTab === 'consolidado' ? 'bg-white border-t border-x border-slate-200 text-blue-600 shadow-sm' : 'text-slate-500 hover:bg-slate-100'}`}><Icons.Database /> Tablero Sprint ({consolidatedStories.length})</button>
                   <button onClick={() => setActiveTab('dev')} className={`px-5 py-3 font-semibold text-sm rounded-t-xl transition flex items-center gap-2 ${activeTab === 'dev' ? 'bg-white border-t border-x border-slate-200 text-blue-600 shadow-sm' : 'text-slate-500 hover:bg-slate-100'}`}><Icons.User /> Desglose DEV Cascadas</button>
                   <button onClick={() => setActiveTab('qa')} className={`px-5 py-3 font-semibold text-sm rounded-t-xl transition flex items-center gap-2 ${activeTab === 'qa' ? 'bg-white border-t border-x border-slate-200 text-blue-600 shadow-sm' : 'text-slate-500 hover:bg-slate-100'}`}><Icons.Clock /> Desglose QA Cascadas</button>
+                  <button onClick={() => setActiveTab('team')} className={`px-5 py-3 font-semibold text-sm rounded-t-xl transition flex items-center gap-2 ${activeTab === 'team' ? 'bg-white border-t border-x border-slate-200 text-blue-600 shadow-sm' : 'text-slate-500 hover:bg-slate-100'}`}><Icons.Users /> Equipo del Proyecto ({activeSprint.resources.length})</button>
                   <button onClick={() => setActiveTab('backlog')} className={`px-5 py-3 font-semibold text-sm rounded-t-xl transition flex items-center gap-2 ${activeTab === 'backlog' ? 'bg-white border-t border-x border-slate-200 text-blue-600 shadow-sm' : 'text-slate-500 hover:bg-slate-100'}`}><Icons.Inbox /> Backlog Rollover ({globalBacklog.length})</button>
                   <button onClick={() => setActiveTab('sharepoint')} className={`px-5 py-3 font-semibold text-sm rounded-t-xl transition flex items-center gap-2 bg-gradient-to-r from-emerald-500/10 to-teal-500/10 ${activeTab === 'sharepoint' ? 'bg-white border-t border-x border-slate-200 text-emerald-600 shadow-sm font-bold' : 'text-emerald-700 hover:bg-emerald-50'}`}><Icons.CloudSync /> Configuración de Base de Datos</button>
                   <button onClick={() => setActiveTab('po')} className={`px-5 py-3 font-semibold text-sm rounded-t-xl transition flex items-center gap-2 sm:ml-auto ${activeTab === 'po' ? 'bg-white border-t border-x border-slate-200 text-blue-600 shadow-sm' : 'text-slate-500 hover:bg-slate-100'}`}><Icons.Settings /> Parámetros Globales & DoD</button>
@@ -1723,10 +1824,9 @@
                     <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-6">
                       <div>
                         <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2 text-emerald-700"><Icons.CloudSync /> Conexión Directa a OneDrive / SharePoint</h3>
-                        <p className="text-sm text-slate-500 mt-1">Sincronice o vincule un nuevo archivo de planificación o reporte parcial desde su PC corporativa de forma simultánea.</p>
+                        <p className="text-sm text-slate-500 mt-1">Sincronice o vincule un nuevo archivo de planificación o reporte parcial desde su PC de forma simultánea.</p>
                       </div>
 
-                      {/* AREA INTELIGENTE DE DRAG & DROP */}
                       <div className="border-2 border-dashed border-emerald-300 rounded-2xl p-8 hover:bg-slate-50/50 transition cursor-pointer flex flex-col items-center justify-center text-center relative">
                         <input type="file" accept=".xlsx, .xls" onChange={(e) => {
                           const file = e.target.files[0];
@@ -1744,17 +1844,6 @@
                           Soporta base de datos completa de sprints o plantillas devueltas por desarrolladores/QA (se detectará y fusionará automáticamente).
                         </p>
                         <span className="mt-3 px-3 py-1 bg-slate-100 hover:bg-slate-200 text-[11px] font-bold text-slate-700 rounded-lg transition">Seleccionar desde Archivos</span>
-                      </div>
-
-                      {/* WORKFLOW DE COLABORACIÓN EXPLICATIVO */}
-                      <div className="bg-blue-50 border border-blue-200 rounded-xl p-5 space-y-2">
-                        <h4 className="font-bold text-blue-900 text-sm flex items-center gap-1.5"><Icons.AlertCircle /> ¿Cómo trabajar colaborativamente con tu equipo?</h4>
-                        <p className="text-xs text-blue-800 leading-relaxed">
-                          1. Descarga la plantilla de <strong>Horas DEV</strong> o <strong>Horas QA</strong> usando los botones de arriba.<br/>
-                          2. Envíasela a tu desarrollador o QA (ellos solo ven y editan sus celdas de desglose de horas).<br/>
-                          3. Cuando te la devuelvan, arrástrala a esta área de importación.<br/>
-                          4. La app cruzará los IDs de las HUs y unirá sus horas en el tablero del Sprint activo al instante.
-                        </p>
                       </div>
 
                       <div className="bg-rose-50 border border-rose-200 rounded-xl p-5 space-y-4">
@@ -1777,13 +1866,13 @@
                   </div>
                 )}
 
-                {/* TAB: TABLERO SPRINT PRINCIPAL */}
+                {}
                 {activeTab === 'consolidado' && (
                   <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                     <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                       <div>
                         <h3 className="font-bold text-slate-900 text-lg">Control de Historias e Integración de Criterios DoD</h3>
-                        <p className="text-xs text-slate-500 font-medium animate-pulse text-blue-600">Para visualizar historias en las Cascadas de abajo, asigne un Desarrollador o un Asegurador QA válido</p>
+                        <p className="text-xs text-slate-500 font-medium text-blue-600">Asigne los recursos por sus IDs numéricos para activar la sincronización con plantillas externas</p>
                       </div>
                       <button onClick={handleOpenAddModal} className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 shadow-lg rounded-xl transition flex items-center gap-1.5"><Icons.Plus /> Agregar HU</button>
                     </div>
@@ -1803,56 +1892,59 @@
                           {consolidatedStories.length === 0 ? (
                             <tr><td colSpan="6" className="px-6 py-12 text-center text-slate-400">No hay Historias de Usuario registradas para este Sprint. Utilice el Backlog Global para integrar pendientes o cree una nueva.</td></tr>
                           ) : (
-                            consolidatedStories.map((hu) => (
-                              <tr key={hu.id} className="hover:bg-slate-50/80 transition">
-                                <td className="px-6 py-4 font-bold text-slate-950">#{hu.id}</td>
-                                <td className="px-6 py-4 max-w-xs md:max-w-md">
-                                  <span className="font-semibold text-slate-800 block truncate">{hu.name}</span>
-                                  <div className="flex flex-wrap gap-2 mt-1">
-                                    <span className="text-[10px] px-1.5 py-0.2 font-medium bg-slate-100 text-slate-600 rounded">{hu.points} SP</span>
-                                    {hu.hasDev && <span className="text-[10px] px-1.5 py-0.2 font-bold bg-blue-50 text-blue-700 rounded border border-blue-100">DEV: {activeSprint.resources.find(r => r.id === hu.devAssigned)?.name || 'Sin Asignar'}</span>}
-                                    {hu.hasQa && <span className="text-[10px] px-1.5 py-0.2 font-bold bg-purple-50 text-purple-700 rounded border border-purple-100">QA: {activeSprint.resources.find(r => r.id === hu.qaAssigned)?.name || 'Sin Asignar'}</span>}
-                                    {hu.delayCategory && <span className="text-[10px] px-1.5 py-0.2 font-bold bg-rose-50 text-rose-700 rounded border border-rose-100 flex items-center gap-1">⚠️ Retraso: {hu.delayCategory}</span>}
-                                  </div>
-                                  {hu.delayReason && <p className="text-[11px] text-slate-500 italic mt-1 line-clamp-1">" {hu.delayReason} "</p>}
-                                </td>
-                                <td className="px-6 py-4">
-                                  <span className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full ${hu.status === 'DoD Compliant (Done)' ? 'bg-emerald-100 text-emerald-800' : hu.status === 'Retrasada / Bloqueada' ? 'bg-rose-100 text-rose-800' : hu.status === 'En Progreso' ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-800'}`}>{hu.status}</span>
-                                </td>
-                                <td className="px-6 py-4">
-                                  <div className="space-y-1">
-                                    <div className="flex justify-between text-[11px]">
-                                      <span className="text-slate-500 font-medium">DoD: {hu.dodProgress}%</span>
-                                      <span className="text-slate-400">({(hu.dodChecked || []).length}/{activeSprint.dodList.length})</span>
+                            consolidatedStories.map((hu) => {
+                              if (!hu || !hu.id) return null;
+                              return (
+                                <tr key={hu.id} className="hover:bg-slate-50/80 transition">
+                                  <td className="px-6 py-4 font-bold text-slate-950">#{hu.id}</td>
+                                  <td className="px-6 py-4 max-w-xs md:max-w-md">
+                                    <span className="font-semibold text-slate-800 block truncate">{hu.name}</span>
+                                    <div className="flex flex-wrap gap-2 mt-1">
+                                      <span className="text-[10px] px-1.5 py-0.2 font-medium bg-slate-100 text-slate-600 rounded">{hu.points} SP</span>
+                                      {hu.hasDev && <span className="text-[10px] px-1.5 py-0.2 font-bold bg-blue-50 text-blue-700 rounded border border-blue-100">DEV (ID {hu.devAssigned || 'S/A'}): {activeSprint.resources.find(r => r.id === hu.devAssigned)?.name || 'Sin Asignar'}</span>}
+                                      {hu.hasQa && <span className="text-[10px] px-1.5 py-0.2 font-bold bg-purple-50 text-purple-700 rounded border border-purple-100">QA (ID {hu.qaAssigned || 'S/A'}): {activeSprint.resources.find(r => r.id === hu.qaAssigned)?.name || 'Sin Asignar'}</span>}
+                                      {hu.delayCategory && <span className="text-[10px] px-1.5 py-0.2 font-bold bg-rose-50 text-rose-700 rounded border border-rose-100 flex items-center gap-1">⚠️ Retraso: {hu.delayCategory}</span>}
                                     </div>
-                                    <div className="w-24 bg-slate-200 rounded-full h-1.5">
-                                      <div className="bg-emerald-500 h-1.5 rounded-full" style={{ width: `${hu.dodProgress}%` }}></div>
+                                    {hu.delayReason && <p className="text-[11px] text-slate-500 italic mt-1 line-clamp-1">" {hu.delayReason} "</p>}
+                                  </td>
+                                  <td className="px-6 py-4">
+                                    <span className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full ${hu.status === 'DoD Compliant (Done)' ? 'bg-emerald-100 text-emerald-800' : hu.status === 'Retrasada / Bloqueada' ? 'bg-rose-100 text-rose-800' : hu.status === 'En Progreso' ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-800'}`}>{hu.status}</span>
+                                  </td>
+                                  <td className="px-6 py-4">
+                                    <div className="space-y-1">
+                                      <div className="flex justify-between text-[11px]">
+                                        <span className="text-slate-500 font-medium">DoD: {hu.dodProgress}%</span>
+                                        <span className="text-slate-400">({(hu.dodChecked || []).length}/{activeSprint.dodList.length})</span>
+                                      </div>
+                                      <div className="w-24 bg-slate-200 rounded-full h-1.5">
+                                        <div className="bg-emerald-500 h-1.5 rounded-full" style={{ width: `${hu.dodProgress}%` }}></div>
+                                      </div>
+                                      <div className="flex flex-wrap gap-1 mt-1.5">
+                                        {activeSprint.dodList.map((item, idx) => {
+                                          const isChecked = (hu.dodChecked || []).includes(item);
+                                          return (
+                                            <button key={idx} onClick={() => toggleDodItem(hu.id, item)} className={`px-1.5 py-0.5 rounded text-[9px] font-semibold border transition ${isChecked ? 'bg-emerald-50 text-emerald-700 border-emerald-300' : 'bg-white text-slate-400 border-slate-200 hover:border-slate-300'}`}>{item}</button>
+                                          );
+                                        })}
+                                      </div>
                                     </div>
-                                    <div className="flex flex-wrap gap-1 mt-1.5">
-                                      {activeSprint.dodList.map((item, idx) => {
-                                        const isChecked = (hu.dodChecked || []).includes(item);
-                                        return (
-                                          <button key={idx} onClick={() => toggleDodItem(hu.id, item)} className={`px-1.5 py-0.5 rounded text-[9px] font-semibold border transition ${isChecked ? 'bg-emerald-50 text-emerald-700 border-emerald-300' : 'bg-white text-slate-400 border-slate-200 hover:border-slate-300'}`}>{item}</button>
-                                        );
-                                      })}
+                                  </td>
+                                  <td className="px-6 py-4">
+                                    <div className="text-xs">
+                                      <span className="font-semibold text-slate-900 block">{formatFriendlyDate(hu.finalDeliveryDate)}</span>
+                                      <span className="text-[10px] text-slate-400">{hu.hasQa ? 'Pasó por QA' : 'Solo DEV'}</span>
                                     </div>
-                                  </div>
-                                </td>
-                                <td className="px-6 py-4">
-                                  <div className="text-xs">
-                                    <span className="font-semibold text-slate-900 block">{formatFriendlyDate(hu.finalDeliveryDate)}</span>
-                                    <span className="text-[10px] text-slate-400">{hu.hasQa ? 'Pasó por QA' : 'Solo DEV'}</span>
-                                  </div>
-                                </td>
-                                <td className="px-6 py-4 text-right">
-                                  <div className="flex justify-end items-center gap-2">
-                                    <button onClick={() => handleOpenEditModal(hu)} className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-slate-100 rounded-lg transition" title="Editar"><Icons.Pencil /></button>
-                                    <button onClick={() => triggerDeleteConfirm(hu.id)} className="p-1.5 text-slate-500 hover:text-rose-600 hover:bg-slate-100 rounded-lg transition" title="Eliminar"><Icons.Trash /></button>
-                                    <button onClick={() => sendToBacklog(hu)} className="px-2.5 py-1.5 bg-slate-100 hover:bg-amber-50 text-slate-700 hover:text-amber-800 border border-slate-200 rounded-lg text-xs font-bold transition flex items-center gap-1" title="Rollover"><Icons.Inbox /> Rollover</button>
-                                  </div>
-                                </td>
-                              </tr>
-                            ))
+                                  </td>
+                                  <td className="px-6 py-4 text-right">
+                                    <div className="flex justify-end items-center gap-2">
+                                      <button onClick={() => handleOpenEditModal(hu)} className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-slate-100 rounded-lg transition" title="Editar"><Icons.Pencil /></button>
+                                      <button onClick={() => triggerDeleteConfirm(hu.id)} className="p-1.5 text-slate-500 hover:text-rose-600 hover:bg-slate-100 rounded-lg transition" title="Eliminar"><Icons.Trash /></button>
+                                      <button onClick={() => sendToBacklog(hu)} className="px-2.5 py-1.5 bg-slate-100 hover:bg-amber-50 text-slate-700 hover:text-amber-800 border border-slate-200 rounded-lg text-xs font-bold transition flex items-center gap-1" title="Rollover"><Icons.Inbox /> Rollover</button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })
                           )}
                         </tbody>
                       </table>
@@ -1860,16 +1952,16 @@
                   </div>
                 )}
 
-                {/* TAB: DESGLOSE DEV CASCADAS */}
+                {}
                 {activeTab === 'dev' && (
                   <div className="space-y-6">
-                    {activeSprint.resources.filter(r => r.role === 'DEV').map(resource => {
+                    {activeSprint.resources.filter(r => r && r.role === 'DEV').map(resource => {
                       const queue = activeSprint.devQueues[resource.id] || [];
-                      const assignedStories = queue.map(id => consolidatedStories.find(hu => hu.id === id)).filter(hu => hu && hu.hasDev);
+                      const assignedStories = queue.map(id => consolidatedStories.find(hu => hu && hu.id === id)).filter(hu => hu && hu.hasDev);
                       return (
                         <div key={resource.id} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                           <div className="p-6 border-b border-slate-100 bg-slate-50/40">
-                            <h4 className="font-bold text-slate-900 text-base">{resource.name}</h4>
+                            <h4 className="font-bold text-slate-900 text-base">{resource.name} (ID Recurso: {resource.id})</h4>
                             <p className="text-xs text-slate-500">Disponibilidad: <strong className="text-slate-700">{resource.capacity}h/día</strong> • Historias: <strong className="text-slate-700">{assignedStories.length}</strong></p>
                           </div>
                           <div className="overflow-x-auto">
@@ -1904,12 +1996,12 @@
                                       </td>
                                       <td className="px-6 py-3 font-bold text-slate-900">#{hu.id}</td>
                                       <td className="px-6 py-3 font-medium text-slate-700 max-w-xs truncate">{hu.name}</td>
-                                      <td className="px-4 py-3 text-center text-slate-600">{hu.devHours.analisis}h</td>
-                                      <td className="px-4 py-3 text-center text-slate-600">{hu.devHours.diseño}h</td>
-                                      <td className="px-4 py-3 text-center text-slate-600">{hu.devHours.casosPrueba}h</td>
-                                      <td className="px-4 py-3 text-center text-slate-600">{hu.devHours.pUnitarias}h</td>
-                                      <td className="px-4 py-3 text-center text-slate-600">{hu.devHours.desarrollo}h</td>
-                                      <td className="px-4 py-3 text-center text-slate-600">{hu.devHours.documentacion}h</td>
+                                      <td className="px-4 py-3 text-center text-slate-600">{hu.devHours?.analisis || 0}h</td>
+                                      <td className="px-4 py-3 text-center text-slate-600">{hu.devHours?.diseño || 0}h</td>
+                                      <td className="px-4 py-3 text-center text-slate-600">{hu.devHours?.casosPrueba || 0}h</td>
+                                      <td className="px-4 py-3 text-center text-slate-600">{hu.devHours?.pUnitarias || 0}h</td>
+                                      <td className="px-4 py-3 text-center text-slate-600">{hu.devHours?.desarrollo || 0}h</td>
+                                      <td className="px-4 py-3 text-center text-slate-600">{hu.devHours?.documentacion || 0}h</td>
                                       <td className="px-6 py-3 text-center font-bold text-blue-600">{hu.totalDevHours}h</td>
                                       <td className="px-6 py-3"><div className="text-xs"><div className="font-medium text-slate-800">Fin: {formatFriendlyDate(hu.devEndDate)}</div><div className="text-[10px] text-slate-500">Inicio: {formatFriendlyDate(hu.devStartDate)}</div></div></td>
                                     </tr>
@@ -1924,16 +2016,16 @@
                   </div>
                 )}
 
-                {/* TAB: DESGLOSE QA CASCADAS */}
+                {}
                 {activeTab === 'qa' && (
                   <div className="space-y-6">
-                    {activeSprint.resources.filter(r => r.role === 'QA').map(resource => {
+                    {activeSprint.resources.filter(r => r && r.role === 'QA').map(resource => {
                       const queue = activeSprint.qaQueues[resource.id] || [];
-                      const assignedStories = queue.map(id => consolidatedStories.find(hu => hu.id === id)).filter(hu => hu && hu.hasQa);
+                      const assignedStories = queue.map(id => consolidatedStories.find(hu => hu && hu.id === id)).filter(hu => hu && hu.hasQa);
                       return (
                         <div key={resource.id} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                           <div className="p-6 border-b border-slate-100 bg-slate-50/40">
-                            <h4 className="font-bold text-slate-900 text-base">{resource.name}</h4>
+                            <h4 className="font-bold text-slate-900 text-base">{resource.name} (ID Recurso: {resource.id})</h4>
                             <p className="text-xs text-slate-500">Disponibilidad: <strong className="text-slate-700">{resource.capacity}h/día</strong> • Historias: <strong className="text-slate-700">{assignedStories.length}</strong></p>
                           </div>
                           <div className="overflow-x-auto">
@@ -1968,12 +2060,12 @@
                                       </td>
                                       <td className="px-6 py-3 font-bold text-slate-900">#{hu.id}</td>
                                       <td className="px-6 py-3 font-medium text-slate-700 max-w-xs truncate">{hu.name}</td>
-                                      <td className="px-4 py-3 text-center text-slate-600">{hu.qaHours.planeacion}h</td>
-                                      <td className="px-4 py-3 text-center text-slate-600">{hu.qaHours.diseño}h</td>
-                                      <td className="px-4 py-3 text-center text-slate-600">{hu.qaHours.ejecucion}h</td>
-                                      <td className="px-4 py-3 text-center text-slate-600">{hu.qaHours.cierre}h</td>
-                                      <td className="px-4 py-3 text-center text-slate-600">{hu.qaHours.entrega}h</td>
-                                      <td className="px-4 py-3 text-center text-slate-600">{hu.qaHours.regresion}h</td>
+                                      <td className="px-4 py-3 text-center text-slate-600">{hu.qaHours?.planeacion || 0}h</td>
+                                      <td className="px-4 py-3 text-center text-slate-600">{hu.qaHours?.diseño || 0}h</td>
+                                      <td className="px-4 py-3 text-center text-slate-600">{hu.qaHours?.ejecucion || 0}h</td>
+                                      <td className="px-4 py-3 text-center text-slate-600">{hu.qaHours?.cierre || 0}h</td>
+                                      <td className="px-4 py-3 text-center text-slate-600">{hu.qaHours?.entrega || 0}h</td>
+                                      <td className="px-4 py-3 text-center text-slate-600">{hu.qaHours?.regresion || 0}h</td>
                                       <td className="px-6 py-3 text-center font-bold text-purple-600">{hu.totalQaHours}h</td>
                                       <td className="px-6 py-3"><div className="text-xs"><div className="font-medium text-slate-800">Fin: {formatFriendlyDate(hu.qaEndDate)}</div><div className="text-[10px] text-slate-500">Inicio: {formatFriendlyDate(hu.qaStartDate)}</div></div></td>
                                     </tr>
@@ -1988,7 +2080,57 @@
                   </div>
                 )}
 
-                {/* TAB: BACKLOG GENERAL */}
+                {}
+                {activeTab === 'team' && (
+                  <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-6">
+                    <div className="flex justify-between items-center border-b border-slate-100 pb-4">
+                      <div>
+                        <h3 className="font-bold text-slate-900 text-lg flex items-center gap-2"><Icons.Users /> Gestión de Equipo & Recursos del Proyecto</h3>
+                        <p className="text-xs text-slate-500">Asocie y configure los IDs únicos que utilizarán los desarrolladores en las plantillas de Excel compartidas.</p>
+                      </div>
+                      <button onClick={handleOpenAddResourceModal} className="px-4 py-2 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 shadow-lg rounded-xl transition flex items-center gap-1.5"><Icons.Plus /> Agregar Recurso</button>
+                    </div>
+
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-sm border-collapse">
+                        <thead>
+                          <tr className="bg-slate-50 text-slate-500 border-b border-slate-200 text-xs font-bold uppercase">
+                            <th className="px-6 py-3">ID Recurso (Excel)</th>
+                            <th className="px-6 py-3">Nombre</th>
+                            <th className="px-6 py-3">Rol Técnico</th>
+                            <th className="px-6 py-3">Capacidad Diaria</th>
+                            <th className="px-6 py-3">Inicio Excepcional</th>
+                            <th className="px-6 py-3 text-right">Acciones</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+                          {activeSprint.resources.map(res => {
+                            if (!res) return null;
+                            return (
+                              <tr key={res.id} className="hover:bg-slate-50/50 transition">
+                                <td className="px-6 py-4"><span className="px-2.5 py-1 bg-slate-100 text-slate-800 font-bold text-xs rounded-lg border border-slate-200">ID {res.id}</span></td>
+                                <td className="px-6 py-4 font-bold text-slate-900">{res.name}</td>
+                                <td className="px-6 py-4">
+                                  <span className={`px-2 py-0.5 text-xs font-bold rounded-md ${res.role === 'DEV' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'}`}>{res.role}</span>
+                                </td>
+                                <td className="px-6 py-4">{res.capacity} horas/día</td>
+                                <td className="px-6 py-4 text-xs text-slate-500">{res.exceptionStart ? formatFriendlyDate(res.exceptionStart) : 'Sigue calendario estándar del Sprint'}</td>
+                                <td className="px-6 py-4 text-right">
+                                  <div className="flex justify-end gap-2">
+                                    <button onClick={() => handleOpenEditResourceModal(res)} className="p-1.5 text-slate-500 hover:text-blue-600 rounded-lg transition" title="Editar"><Icons.Pencil /></button>
+                                    <button onClick={() => handleDeleteResource(res.id)} className="p-1.5 text-slate-500 hover:text-rose-600 rounded-lg transition" title="Eliminar"><Icons.Trash /></button>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {}
                 {activeTab === 'backlog' && (
                   <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-6">
                     <div className="flex justify-between items-center border-b border-slate-100 pb-4">
@@ -2001,22 +2143,25 @@
                       {globalBacklog.length === 0 ? (
                         <div className="md:col-span-2 text-center py-12 text-slate-400 italic">No hay historias pendientes en el Backlog. ¡Todo al día!</div>
                       ) : (
-                        globalBacklog.map((story) => (
-                          <div key={story.id} className="border border-slate-200 bg-slate-50/50 hover:bg-slate-50 rounded-xl p-4 flex flex-col justify-between gap-4">
-                            <div>
-                              <div className="flex justify-between items-start">
-                                <span className="font-bold text-slate-950">#{story.id}</span>
-                                <span className="text-[11px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-md">Pendiente de Sprint</span>
+                        globalBacklog.map((story) => {
+                          if (!story) return null;
+                          return (
+                            <div key={story.id} className="border border-slate-200 bg-slate-50/50 hover:bg-slate-50 rounded-xl p-4 flex flex-col justify-between gap-4">
+                              <div>
+                                <div className="flex justify-between items-start">
+                                  <span className="font-bold text-slate-950">#{story.id}</span>
+                                  <span className="text-[11px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-md">Pendiente de Sprint</span>
+                                </div>
+                                <h4 className="font-bold text-slate-800 text-sm mt-1">{story.name}</h4>
+                                <p className="text-xs text-slate-500 mt-2">{story.points} SP • {story.hasDev ? 'DEV' : 'Sin DEV'} • {story.hasQa ? 'QA' : 'Sin QA'}</p>
                               </div>
-                              <h4 className="font-bold text-slate-800 text-sm mt-1">{story.name}</h4>
-                              <p className="text-xs text-slate-500 mt-2">{story.points} SP • {story.hasDev ? 'DEV' : 'Sin DEV'} • {story.hasQa ? 'QA' : 'Sin QA'}</p>
+                              <div className="flex justify-end gap-2 border-t border-slate-200/60 pt-3">
+                                <button onClick={() => triggerDiscardBacklogConfirm(story.id)} className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-slate-100 rounded-lg transition"><Icons.Trash /></button>
+                                <button onClick={() => integrateFromBacklog(story.id)} className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5"><Icons.Plus /> Planificar en {activeSprintId}</button>
+                              </div>
                             </div>
-                            <div className="flex justify-end gap-2 border-t border-slate-200/60 pt-3">
-                              <button onClick={() => triggerDiscardBacklogConfirm(story.id)} className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-slate-100 rounded-lg transition"><Icons.Trash /></button>
-                              <button onClick={() => integrateFromBacklog(story.id)} className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5"><Icons.Plus /> Planificar en {activeSprintId}</button>
-                            </div>
-                          </div>
-                        ))
+                          );
+                        })
                       )}
                     </div>
                   </div>
@@ -2028,7 +2173,7 @@
                     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-6">
                       <div>
                         <h4 className="font-bold text-slate-900 text-base flex items-center gap-2"><Icons.Calendar /> Configuración del Sprint</h4>
-                        <p className="text-xs text-slate-500 font-medium font-semibold text-emerald-700">Renombre el Sprint o configure su ciclo de vida activo</p>
+                        <p className="text-xs text-slate-500 font-medium text-emerald-700">Renombre el Sprint o configure su ciclo de vida activo</p>
                       </div>
                       <div className="space-y-4">
                         <div>
@@ -2067,36 +2212,6 @@
                           </div>
                           <span className="text-2xl font-black text-blue-600 bg-blue-50 border border-blue-100 px-3.5 py-1.5 rounded-xl">{sprintWorkingDays}</span>
                         </div>
-
-                        {Object.keys(sprints).length > 1 && (
-                          <div className="pt-4 border-t border-slate-100">
-                            <button
-                              onClick={() => {
-                                setConfirmState({
-                                  isOpen: true,
-                                  title: 'Eliminar Sprint Completo',
-                                  message: `¿Está seguro de que desea eliminar el "${activeSprintId}" completo de la base de datos? Esta acción es irreversible.`,
-                                  onConfirm: () => {
-                                    setSprints(prev => {
-                                      const copy = { ...prev };
-                                      delete copy[activeSprintId];
-                                      return copy;
-                                    });
-                                    const remaining = Object.keys(sprints).filter(id => id !== activeSprintId);
-                                    setActiveSprintId(remaining[0]);
-                                    showFeedback(`Se eliminó el Sprint de la memoria activa`, "success");
-                                    addLog(`Sprint "${activeSprintId}" purgado de la base de datos.`);
-                                    setConfirmState(prev => ({ ...prev, isOpen: false }));
-                                  }
-                                });
-                              }}
-                              type="button"
-                              className="w-full py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5"
-                            >
-                              <Icons.Trash /> Eliminar Sprint Activo
-                            </button>
-                          </div>
-                        )}
                       </div>
                     </div>
 
@@ -2111,7 +2226,7 @@
                             if (e.key === 'Enter') {
                               const val = e.target.value.trim();
                               if (!val) return;
-                              setSprints(prev => { const s = { ...prev[activeSprintId] }; s.dodList = [...s.dodList, val]; return { ...prev, [activeSprintId]: s }; });
+                              setSprints(prev => { const s = { ...prev[activeSprintId] }; s.dodList = [...(s.dodList || []), val]; return { ...prev, [activeSprintId]: s }; });
                               e.target.value = '';
                               showFeedback('Elemento DoD agregado', 'success');
                             }
@@ -2120,7 +2235,7 @@
                             const input = document.getElementById('newDodInput');
                             const val = input?.value?.trim();
                             if (!val) return;
-                            setSprints(prev => { const s = { ...prev[activeSprintId] }; s.dodList = [...s.dodList, val]; return { ...prev, [activeSprintId]: s }; });
+                            setSprints(prev => { const s = { ...prev[activeSprintId] }; s.dodList = [...(s.dodList || []), val]; return { ...prev, [activeSprintId]: s }; });
                             if (input) input.value = '';
                             showFeedback('Elemento DoD agregado', 'success');
                           }} className="px-4 py-2 bg-slate-900 text-white font-semibold text-sm rounded-xl hover:bg-slate-800 transition">Añadir</button>
@@ -2129,7 +2244,7 @@
                           {activeSprint.dodList.map((item, index) => (
                             <div key={index} className="p-3 flex justify-between items-center">
                               <span className="text-xs font-semibold text-slate-700">{item}</span>
-                              <button onClick={() => { setSprints(prev => { const s = { ...prev[activeSprintId] }; s.dodList = s.dodList.filter((_, idx) => idx !== index); return { ...prev, [activeSprintId]: s }; }); showFeedback('Criterio del DoD removido', 'success'); }} className="text-slate-400 hover:text-rose-600 rounded p-1 transition"><Icons.Trash /></button>
+                              <button onClick={() => { setSprints(prev => { const s = { ...prev[activeSprintId] }; s.dodList = (s.dodList || []).filter((_, idx) => idx !== index); return { ...prev, [activeSprintId]: s }; }); showFeedback('Criterio del DoD removido', 'success'); }} className="text-slate-400 hover:text-rose-600 rounded p-1 transition"><Icons.Trash /></button>
                             </div>
                           ))}
                         </div>
@@ -2144,7 +2259,7 @@
                       <div className="space-y-4">
                         <div className="bg-emerald-50/50 border border-emerald-100 rounded-xl p-4 space-y-3">
                           <div className="text-xs text-emerald-800 font-semibold flex items-center gap-1.5">
-                            <span className="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
+                            <span className="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
                             Festivos Oficiales de Colombia (Ley Emiliani)
                           </div>
                           <p className="text-[11px] text-emerald-700 leading-relaxed">
@@ -2165,7 +2280,7 @@
                             if (!newHoliday) return;
                             setSprints(prev => {
                               const s = { ...prev[activeSprintId] };
-                              if (!s.holidays.includes(newHoliday)) s.holidays = [...s.holidays, newHoliday].sort();
+                              if (!s.holidays.includes(newHoliday)) s.holidays = [...(s.holidays || []), newHoliday].sort();
                               return { ...prev, [activeSprintId]: s };
                             });
                             setNewHoliday('');
@@ -2179,7 +2294,7 @@
                             activeSprint.holidays.map((dateStr) => (
                               <div key={dateStr} className="p-3 flex justify-between items-center hover:bg-slate-50">
                                 <span className="text-xs font-semibold text-slate-700">{formatFriendlyDate(dateStr)}</span>
-                                <button onClick={() => { setSprints(prev => { const s = { ...prev[activeSprintId] }; s.holidays = s.holidays.filter(d => d !== dateStr); return { ...prev, [activeSprintId]: s }; }); showFeedback('Día festivo removido', 'success'); }} className="p-1 text-slate-400 hover:text-rose-600 rounded transition"><Icons.Trash /></button>
+                                <button onClick={() => { setSprints(prev => { const s = { ...prev[activeSprintId] }; s.holidays = (s.holidays || []).filter(d => d !== dateStr); return { ...prev, [activeSprintId]: s }; }); showFeedback('Día festivo removido', 'success'); }} className="p-1 text-slate-400 hover:text-rose-600 rounded transition"><Icons.Trash /></button>
                               </div>
                             ))
                           )}
@@ -2219,7 +2334,7 @@
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
-                            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Fecha de Inicio (Sugerida)</label>
+                            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Fecha de Inicio</label>
                             <input 
                               type="date" 
                               value={createSprintConfig.start} 
@@ -2228,7 +2343,7 @@
                             />
                           </div>
                           <div>
-                            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Fecha de Cierre (Sugerida)</label>
+                            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Fecha de Cierre</label>
                             <input 
                               type="date" 
                               value={createSprintConfig.end} 
@@ -2275,8 +2390,8 @@
 
                       <div className="bg-blue-50/50 border border-blue-100 rounded-2xl p-4 flex justify-between items-center">
                         <div>
-                          <div className="text-xs font-bold text-blue-800">Días Hábiles del Periodo Sugerido</div>
-                          <p className="text-[10px] text-blue-600 mt-0.5">Excluyendo fines de semana y festivos confirmados.</p>
+                          <div className="text-xs font-bold text-blue-800">Días Hábiles del Periodo</div>
+                          <p className="text-[10px] text-blue-600 mt-0.5">Excluyendo fines de semana y festivos.</p>
                         </div>
                         <span className="text-3xl font-black text-blue-700 bg-blue-100 border border-blue-200 px-4 py-2 rounded-2xl">
                           {createSprintConfig.start && createSprintConfig.end ? previewWorkingDaysCount : 0} d
@@ -2292,6 +2407,7 @@
                 </div>
               )}
 
+              {}
               {/* MODAL: CREACIÓN / EDICIÓN HU */}
               {isModalOpen && (
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -2325,14 +2441,14 @@
                           <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Asignar DEV</label>
                           <select value={huForm.devAssigned} onChange={(e) => handleInputChange('devAssigned', e.target.value)} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm bg-white font-medium">
                             <option value="">Seleccione DEV...</option>
-                            {activeSprint.resources.filter(r => r.role === 'DEV').map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                            {activeSprint.resources.filter(r => r && r.role === 'DEV').map(r => <option key={r.id} value={r.id}>{r.name} (ID: {r.id})</option>)}
                           </select>
                         </div>
                         <div>
                           <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Asignar QA</label>
                           <select value={huForm.qaAssigned} onChange={(e) => handleInputChange('qaAssigned', e.target.value)} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm bg-white font-medium">
                             <option value="">Seleccione QA...</option>
-                            {activeSprint.resources.filter(r => r.role === 'QA').map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                            {activeSprint.resources.filter(r => r && r.role === 'QA').map(r => <option key={r.id} value={r.id}>{r.name} (ID: {r.id})</option>)}
                           </select>
                         </div>
                       </div>
@@ -2382,13 +2498,13 @@
                         <div className={`p-4 rounded-xl border ${huForm.hasDev ? 'border-slate-200 bg-slate-50/50' : 'border-slate-100 bg-slate-100/50 opacity-50'}`}>
                           <h4 className="font-bold text-sm text-slate-800 mb-4 flex items-center justify-between">
                             <span>Desglose DEV (Horas)</span>
-                            <span className="text-xs font-bold text-blue-600 font-semibold">Total: {Object.values(huForm.devHours).reduce((a, b) => a + Number(b || 0), 0)}h</span>
+                            <span className="text-xs font-bold text-blue-600 font-semibold">Total: {Object.values(huForm.devHours || {}).reduce((a, b) => a + Number(b || 0), 0)}h</span>
                           </h4>
                           <div className="grid grid-cols-2 gap-3 text-xs">
                             {['analisis', 'diseño', 'casosPrueba', 'pUnitarias', 'desarrollo', 'documentacion'].map(f => (
                               <div key={f}>
                                 <label className="block text-slate-500 mb-1 capitalize">{f === 'casosPrueba' ? 'Casos Prueba' : f === 'pUnitarias' ? 'P. Unitarias' : f}</label>
-                                <input type="number" disabled={!huForm.hasDev} value={huForm.devHours[f]} onChange={(e) => handleHoursChange('devHours', f, e.target.value)} className="w-full border border-slate-200 rounded-lg p-1.5 text-center font-bold text-slate-700" />
+                                <input type="number" disabled={!huForm.hasDev} value={huForm.devHours?.[f] || 0} onChange={(e) => handleHoursChange('devHours', f, e.target.value)} className="w-full border border-slate-200 rounded-lg p-1.5 text-center font-bold text-slate-700" />
                               </div>
                             ))}
                           </div>
@@ -2397,13 +2513,13 @@
                         <div className={`p-4 rounded-xl border ${huForm.hasQa ? 'border-slate-200 bg-slate-50/50' : 'border-slate-100 bg-slate-100/50 opacity-50'}`}>
                           <h4 className="font-bold text-sm text-slate-800 mb-4 flex items-center justify-between">
                             <span>Desglose QA (Horas)</span>
-                            <span className="text-xs font-bold text-purple-600 font-semibold">Total: {Object.values(huForm.qaHours).reduce((a, b) => a + Number(b || 0), 0)}h</span>
+                            <span className="text-xs font-bold text-purple-600 font-semibold">Total: {Object.values(huForm.qaHours || {}).reduce((a, b) => a + Number(b || 0), 0)}h</span>
                           </h4>
                           <div className="grid grid-cols-2 gap-3 text-xs">
                             {['planeacion', 'diseño', 'ejecucion', 'cierre', 'entrega', 'regresion'].map(f => (
                               <div key={f}>
                                 <label className="block text-slate-500 mb-1 capitalize">{f === 'planeacion' ? 'Planeación' : f === 'regresion' ? 'Regresión' : f}</label>
-                                <input type="number" step={f === 'cierre' || f === 'entrega' ? '0.5' : '1'} disabled={!huForm.hasQa} value={huForm.qaHours[f]} onChange={(e) => handleHoursChange('qaHours', f, e.target.value)} className="w-full border border-slate-200 rounded-lg p-1.5 text-center font-bold text-slate-700" />
+                                <input type="number" step={f === 'cierre' || f === 'entrega' ? '0.5' : '1'} disabled={!huForm.hasQa} value={huForm.qaHours?.[f] || 0} onChange={(e) => handleHoursChange('qaHours', f, e.target.value)} className="w-full border border-slate-200 rounded-lg p-1.5 text-center font-bold text-slate-700" />
                               </div>
                             ))}
                           </div>
@@ -2415,6 +2531,51 @@
                       <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 border border-slate-200 hover:bg-slate-100 text-slate-700 font-semibold text-sm rounded-xl transition">Cancelar</button>
                       <button type="submit" onClick={saveUserStory} className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm rounded-xl shadow-lg transition flex items-center gap-1"><Icons.Check /> Guardar HU</button>
                     </div>
+                  </div>
+                </div>
+              )}
+
+              {/* MODAL: CREACIÓN / EDICIÓN RECURSO */}
+              {isResourceModalOpen && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                  <div className="bg-white rounded-2xl shadow-2xl border border-slate-100 max-w-md w-full overflow-hidden flex flex-col">
+                    <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                      <h3 className="font-bold text-slate-900 text-lg">{modalMode === 'add' ? 'Agregar Nuevo Recurso' : 'Editar Recurso de Equipo'}</h3>
+                      <button onClick={() => setIsResourceModalOpen(false)} className="text-slate-400 hover:text-slate-600 bg-white border border-slate-200 rounded-full p-1.5 transition">✕</button>
+                    </div>
+
+                    <form onSubmit={saveResource} className="p-6 space-y-4">
+                      <div>
+                        <label className="block text-xs font-bold uppercase text-slate-500 mb-1">ID del Recurso (Excel) *</label>
+                        <input type="text" disabled={modalMode === 'edit'} value={resourceForm.id} onChange={(e) => setResourceForm(prev => ({ ...prev, id: e.target.value.replace(/\D/g, '') }))} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm bg-white font-bold" placeholder="Ej: 4" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Nombre Completo *</label>
+                        <input type="text" value={resourceForm.name} onChange={(e) => setResourceForm(prev => ({ ...prev, name: e.target.value }))} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm bg-white" placeholder="Ej: Diana Prince" />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Rol Técnico</label>
+                          <select value={resourceForm.role} onChange={(e) => setResourceForm(prev => ({ ...prev, role: e.target.value, capacity: e.target.value === 'DEV' ? 8 : 4 }))} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm bg-white">
+                            <option value="DEV">DEV (Desarrollador)</option>
+                            <option value="QA">QA (Asegurador)</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Capacidad Diaria (H)</label>
+                          <input type="number" value={resourceForm.capacity} onChange={(e) => setResourceForm(prev => ({ ...prev, capacity: parseInt(e.target.value) || 0 }))} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm bg-white" />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Inicio Excepcional (Fecha)</label>
+                        <input type="date" value={resourceForm.exceptionStart} onChange={(e) => setResourceForm(prev => ({ ...prev, exceptionStart: e.target.value }))} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm bg-white" />
+                      </div>
+
+                      <div className="pt-4 flex justify-end gap-3 border-t border-slate-100">
+                        <button type="button" onClick={() => setIsResourceModalOpen(false)} className="px-4 py-2 border border-slate-200 hover:bg-slate-100 text-slate-700 font-semibold text-sm rounded-xl transition">Cancelar</button>
+                        <button type="submit" className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm rounded-xl shadow-lg transition">Guardar</button>
+                      </div>
+                    </form>
                   </div>
                 </div>
               )}
