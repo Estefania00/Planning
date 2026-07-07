@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Capacidad Ágil & DoD Cascadas2.0</title>
+    <title>Capacidad Ágil & DoD Cascadas</title>
     <!-- Tailwind CSS Play CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- React & ReactDOM (Librerías de Producción de React) -->
@@ -30,6 +30,134 @@
 
     <script type="text/babel">
         const { useState, useMemo, useEffect } = React;
+
+        // --- SISTEMA DE CÁLCULO DE FESTIVOS OFICIALES EN COLOMBIA (LEY EMILIANI) ---
+        function getEasterDate(year) {
+          const a = year % 19;
+          const b = Math.floor(year / 100);
+          const c = year % 100;
+          const d = Math.floor(b / 4);
+          const e = b % 4;
+          const f = Math.floor((b + 8) / 25);
+          const g = Math.floor((b - f + 1) / 3);
+          const h = (19 * a + b - d - g + 15) % 30;
+          const i = Math.floor(c / 4);
+          const k = c % 4;
+          const L = (32 + 2 * e + 2 * i - h - k) % 7;
+          const m = Math.floor((a + 11 * h + 22 * L) / 451);
+          const month = Math.floor((h + L - 7 * m + 114) / 31);
+          const day = ((h + L - 7 * m + 114) % 31) + 1;
+          return new Date(Date.UTC(year, month - 1, day));
+        }
+
+        function getColombianHolidaysWithNames(year) {
+          const list = [];
+          
+          // Ley Emiliani: Mueve ciertos festivos al siguiente lunes (si caen en otro día)
+          const emiliani = (date) => {
+            const day = date.getUTCDay(); // 0 = Domingo, 1 = Lunes, ..., 6 = Sábado
+            if (day === 1) return date; // Ya es lunes
+            const diff = day === 0 ? 1 : 8 - day;
+            const res = new Date(date);
+            res.setUTCDate(res.getUTCDate() + diff);
+            return res;
+          };
+          
+          const formatISO = (d) => d.toISOString().split('T')[0];
+          
+          // 1. Festivos con Fecha Inamovible (No Emiliani)
+          list.push({ date: formatISO(new Date(Date.UTC(year, 0, 1))), name: "Año Nuevo" });
+          list.push({ date: formatISO(new Date(Date.UTC(year, 4, 1))), name: "Día del Trabajo" });
+          list.push({ date: formatISO(new Date(Date.UTC(year, 6, 20))), name: "Grito de Independencia" });
+          list.push({ date: formatISO(new Date(Date.UTC(year, 7, 7))), name: "Batalla de Boyacá" });
+          list.push({ date: formatISO(new Date(Date.UTC(year, 11, 8))), name: "Inmaculada Concepción" });
+          list.push({ date: formatISO(new Date(Date.UTC(year, 11, 25))), name: "Navidad" });
+
+          // 2. Festivos regulados por Ley Emiliani (Se corren al siguiente Lunes)
+          list.push({ date: formatISO(emiliani(new Date(Date.UTC(year, 0, 6)))), name: "Reyes Magos" });
+          list.push({ date: formatISO(emiliani(new Date(Date.UTC(year, 2, 19)))), name: "San José" });
+          list.push({ date: formatISO(emiliani(new Date(Date.UTC(year, 5, 29)))), name: "San Pedro y San Pablo" });
+          list.push({ date: formatISO(emiliani(new Date(Date.UTC(year, 7, 15)))), name: "Asunción de la Virgen" });
+          list.push({ date: formatISO(emiliani(new Date(Date.UTC(year, 9, 12)))), name: "Día de la Raza" });
+          list.push({ date: formatISO(emiliani(new Date(Date.UTC(year, 10, 1)))), name: "Todos los Santos" });
+          list.push({ date: formatISO(emiliani(new Date(Date.UTC(year, 10, 11)))), name: "Independencia de Cartagena" });
+
+          // 3. Festivos móviles respecto a la Pascua / Semana Santa
+          const easter = getEasterDate(year);
+          
+          // Jueves Santo (Pascua - 3 días)
+          const juevesSanto = new Date(easter);
+          juevesSanto.setUTCDate(juevesSanto.getUTCDate() - 3);
+          list.push({ date: formatISO(juevesSanto), name: "Jueves Santo" });
+
+          // Viernes Santo (Pascua - 2 días)
+          const viernesSanto = new Date(easter);
+          viernesSanto.setUTCDate(viernesSanto.getUTCDate() - 2);
+          list.push({ date: formatISO(viernesSanto), name: "Viernes Santo" });
+
+          // Ascensión del Señor (Pascua + 39 días, corrido 4 días al lunes siguiente = Pascua + 43 días)
+          const ascension = new Date(easter);
+          ascension.setUTCDate(ascension.getUTCDate() + 43);
+          list.push({ date: formatISO(ascension), name: "Ascensión del Señor" });
+
+          // Corpus Christi (Pascua + 60 días, corrido 4 días al lunes siguiente = Pascua + 64 días)
+          const corpus = new Date(easter);
+          corpus.setUTCDate(corpus.getUTCDate() + 64);
+          list.push({ date: formatISO(corpus), name: "Corpus Christi" });
+
+          // Sagrado Corazón de Jesús (Pascua + 68 días, corrido 3 días al lunes siguiente = Pascua + 71 días)
+          const sagradoCorazon = new Date(easter);
+          sagradoCorazon.setUTCDate(sagradoCorazon.getUTCDate() + 71);
+          list.push({ date: formatISO(sagradoCorazon), name: "Sagrado Corazón" });
+
+          // Filtrar duplicados y ordenar cronológicamente
+          const seen = new Set();
+          return list.filter(item => {
+            if (seen.has(item.date)) return false;
+            seen.add(item.date);
+            return true;
+          }).sort((a, b) => a.date.localeCompare(b.date));
+        }
+
+        // Obtener festivos colombianos contenidos dentro de un rango específico de fechas
+        function getColombianHolidaysForRange(startStr, endStr) {
+          const start = new Date(startStr + 'T00:00:00');
+          const end = new Date(endStr + 'T00:00:00');
+          if (isNaN(start) || isNaN(end) || start > end) return [];
+          
+          const startYear = start.getFullYear();
+          const endYear = end.getFullYear();
+          
+          let allHolidays = [];
+          for (let y = startYear; y <= endYear; y++) {
+            allHolidays = allHolidays.concat(getColombianHolidaysWithNames(y));
+          }
+          
+          return allHolidays.filter(h => {
+            const hDate = new Date(h.date + 'T00:00:00');
+            return hDate >= start && hDate <= end;
+          });
+        }
+
+        // Obtener el primer día hábil siguiente a una fecha (calculando fines de semana y festivos oficiales de Colombia)
+        function getNextBusinessDayColombia(dateStr) {
+          let current = new Date(dateStr + 'T00:00:00');
+          current.setDate(current.getDate() + 1);
+          while (true) {
+            const year = current.getFullYear();
+            const holidays = getColombianHolidaysWithNames(year).map(h => h.date);
+            const day = current.getDay(); // 0 = Domingo, 6 = Sábado
+            const isWeekend = day === 0 || day === 6;
+            const currentISO = current.toISOString().split('T')[0];
+            const isHoliday = holidays.includes(currentISO);
+            
+            if (!isWeekend && !isHoliday) {
+              return currentISO;
+            }
+            current.setDate(current.getDate() + 1);
+          }
+        }
+
 
         // Íconos SVG robustos para la interfaz
         const Icons = {
@@ -206,12 +334,29 @@
         function App() {
           const [sprints, setSprints] = useState(() => {
             const saved = localStorage.getItem('SP_PLANNING_PORTAL_STATE');
-            return saved ? JSON.parse(saved) : null; // Iniciamos en NULL para forzar la pantalla de carga limpia de Excel
+            return saved ? JSON.parse(saved) : null; 
           });
 
           const [activeSprintId, setActiveSprintId] = useState(() => {
             const savedSprint = localStorage.getItem('SP_PLANNING_PORTAL_ACTIVE_ID');
             return savedSprint || 'Sprint 59';
+          });
+
+          // Estado del input para renombrar el sprint actual
+          const [sprintRenameInput, setSprintRenameInput] = useState(activeSprintId);
+
+          // Sincronizar el input de renombrado cada que cambia el Sprint activo
+          useEffect(() => {
+            setSprintRenameInput(activeSprintId);
+          }, [activeSprintId]);
+
+          // --- ESTADOS PARA LA CREACIÓN Y EDICIÓN PO DE SPRINT CON FESTIVOS COLOMBIANOS ---
+          const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+          const [createSprintConfig, setCreateSprintConfig] = useState({
+            id: '',
+            start: '',
+            end: '',
+            detectedHolidays: [] // Objetos: { date, name, checked }
           });
 
           const [newHoliday, setNewHoliday] = useState('');
@@ -409,7 +554,7 @@
 
               let statusText = 'Con disponibilidad';
               let statusColor = 'bg-emerald-100 text-emerald-800 border-emerald-300';
-              let progressColor = 'bg-emerald-50500';
+              let progressColor = 'bg-emerald-500';
 
               if (occupationPercent === 100) {
                 statusText = 'Al límite (0 dispo)';
@@ -447,7 +592,6 @@
               let qaSheetName = workbook.SheetNames.find(n => n.toLowerCase().includes('horas qa') || n.toLowerCase().includes('qa'));
 
               if (!huSheetName) {
-                // Buscamos cualquier sheet para deducir Sprint
                 huSheetName = workbook.SheetNames[0];
               }
 
@@ -522,7 +666,7 @@
                       const name = rowStr[1];
                       const cap = parseFloat(rowStr[2]) || 8;
                       const role = foundDev ? 'DEV' : 'QA';
-                      const id = String(colNum + (foundQa ? 10 : 0)); // Evitar colisiones de IDs
+                      const id = String(colNum + (foundQa ? 10 : 0)); // Evitar colisiones de IDs (DEV: 1, 2... QA: 11, 12...)
 
                       resourcesList.push({
                         id, name, role, capacity: role === 'DEV' ? 8 : 4, exceptionStart: ''
@@ -550,15 +694,52 @@
                   const personAssigned = String(row['Persona asignada'] || '');
                   const status = row['Estado actual'] || row['Estado Sprint'] || 'Planeada';
 
-                  const hasDev = personAssigned.toUpperCase().includes('Briyith') || personAssigned.toUpperCase().includes('Luis') || !personAssigned.toUpperCase().includes('Jordan');
-                  const hasQa = personAssigned.toUpperCase().includes('Jordan') || personAssigned.toUpperCase().includes('/');
+                  const personUpper = personAssigned.toUpperCase();
+                  const typeCol = String(row['Desarrollo/QA/Regresion'] || row['Tipo'] || '').toUpperCase();
+
+                  // Mapeo dinámico de Tipos de HU
+                  let hasDev = false;
+                  let hasQa = false;
+                  if (typeCol) {
+                    if (typeCol.includes('DEV') || typeCol.includes('DESARROLLO')) hasDev = true;
+                    if (typeCol.includes('QA') || typeCol.includes('REGRESION') || typeCol.includes('ASEGURAMIENTO')) hasQa = true;
+                  } else {
+                    hasDev = personUpper.includes('BRIYITH') || personUpper.includes('LUIS') || (!personUpper.includes('JORDAN') && personUpper !== '');
+                    hasQa = personUpper.includes('JORDAN') || personUpper.includes('/');
+                  }
+
+                  let devAssigned = '';
+                  let qaAssigned = '';
+
+                  // Mapeo dinámico de asignación cruzando con recursos cargados
+                  const parts = personAssigned.split('/');
+                  parts.forEach(part => {
+                    const cleanPart = part.trim().toUpperCase();
+                    const foundDevRes = active.resources.find(r => r.role === 'DEV' && (cleanPart.includes(r.name.toUpperCase().trim()) || r.name.toUpperCase().includes(cleanPart)));
+                    if (foundDevRes) devAssigned = foundDevRes.id;
+
+                    const foundQaRes = active.resources.find(r => r.role === 'QA' && (cleanPart.includes(r.name.toUpperCase().trim()) || r.name.toUpperCase().includes(cleanPart)));
+                    if (foundQaRes) qaAssigned = foundQaRes.id;
+                  });
+
+                  // Fallbacks estáticos por seguridad
+                  if (!devAssigned) {
+                    if (personUpper.includes('BRIYITH')) devAssigned = '1';
+                    else if (personUpper.includes('LUIS')) devAssigned = '2';
+                  }
+                  if (!qaAssigned) {
+                    if (personUpper.includes('JORDAN')) {
+                      const jordanRes = active.resources.find(r => r.name.toUpperCase().includes('JORDAN'));
+                      qaAssigned = jordanRes ? jordanRes.id : '11';
+                    }
+                  }
 
                   active.userStories.push({
                     id,
                     name,
                     points,
-                    devAssigned: personAssigned.toUpperCase().includes('BRIYITH') ? '1' : personAssigned.toUpperCase().includes('LUIS') ? '2' : '',
-                    qaAssigned: personAssigned.toUpperCase().includes('JORDAN') ? '3' : '',
+                    devAssigned,
+                    qaAssigned,
                     hasDev,
                     hasQa,
                     status,
@@ -571,7 +752,7 @@
                 });
               }
 
-              // 3. Parsear Horas DEV desglosadas
+              // 3. Parsear Horas DEV desglosadas con Vinculación Inteligente de Recurso
               if (devSheetName) {
                 const sheet = workbook.Sheets[devSheetName];
                 const rows = XLSX.utils.sheet_to_json(sheet);
@@ -588,11 +769,26 @@
                       desarrollo: parseFloat(row['Desarrollo']) || 0,
                       documentacion: parseFloat(row['Documentación'] || row['Documentacion']) || 0
                     };
+
+                    // Si no tiene dev asignado en el consolidador, lo leemos de Horas DEV
+                    if (!story.devAssigned) {
+                      const devColVal = row['DEV'] || row['Dev'] || row['Desarrollador Asignado'];
+                      if (devColVal !== undefined && devColVal !== null) {
+                        const devNum = parseInt(devColVal);
+                        if (!isNaN(devNum)) {
+                          story.devAssigned = String(devNum);
+                        } else {
+                          const cleanName = String(devColVal).toUpperCase().trim();
+                          const foundDevRes = active.resources.find(r => r.role === 'DEV' && (cleanName.includes(r.name.toUpperCase().trim()) || r.name.toUpperCase().includes(cleanName)));
+                          if (foundDevRes) story.devAssigned = foundDevRes.id;
+                        }
+                      }
+                    }
                   }
                 });
               }
 
-              // 4. Parsear Horas QA desglosadas
+              // 4. Parsear Horas QA desglosadas con Vinculación Inteligente de Recurso
               if (qaSheetName) {
                 const sheet = workbook.Sheets[qaSheetName];
                 const rows = XLSX.utils.sheet_to_json(sheet);
@@ -609,31 +805,57 @@
                       entrega: parseFloat(row['Entrega']) || 0,
                       regresion: parseFloat(row['Regresion'] || row['Regresión']) || 0
                     };
+
+                    // Si no tiene QA asignado en el consolidador, lo leemos de Horas QA (Evita el Bug de Carga en Blanco)
+                    if (!story.qaAssigned) {
+                      const qaColVal = row['QA'] || row['Qa'] || row['Asegurador Asignado'];
+                      if (qaColVal !== undefined && qaColVal !== null) {
+                        const qaNum = parseInt(qaColVal);
+                        if (!isNaN(qaNum)) {
+                          story.qaAssigned = String(qaNum + 10);
+                        } else {
+                          const cleanName = String(qaColVal).toUpperCase().trim();
+                          const foundQaRes = active.resources.find(r => r.role === 'QA' && (cleanName.includes(r.name.toUpperCase().trim()) || r.name.toUpperCase().includes(cleanName)));
+                          if (foundQaRes) story.qaAssigned = foundQaRes.id;
+                        }
+                      }
+                    }
                   }
                 });
               }
 
-              // Reconstruir colas de prioridades iniciales
-              const dev1Queue = [];
-              const dev2Queue = [];
-              const qaQueue = [];
+              // --- SOLUCIÓN INTEGRAL AL BUG: RECONSTRUCCIÓN DINÁMICA DE COLAS DE PRIORIDAD ---
+              const devQueues = {};
+              const qaQueues = {};
+
+              // Inicializar colas para cada recurso registrado en caliente
+              active.resources.forEach(res => {
+                if (res.role === 'DEV') devQueues[res.id] = [];
+                if (res.role === 'QA') qaQueues[res.id] = [];
+              });
 
               active.userStories.forEach(story => {
-                if (story.hasDev) {
-                  if (story.devAssigned === '1') dev1Queue.push(story.id);
-                  else if (story.devAssigned === '2') dev2Queue.push(story.id);
+                if (story.hasDev && story.devAssigned) {
+                  if (!devQueues[story.devAssigned]) devQueues[story.devAssigned] = [];
+                  devQueues[story.devAssigned].push(story.id);
                 }
-                if (story.hasQa && story.qaAssigned === '3') {
-                  qaQueue.push(story.id);
+                if (story.hasQa && story.qaAssigned) {
+                  if (!qaQueues[story.qaAssigned]) qaQueues[story.qaAssigned] = [];
+                  qaQueues[story.qaAssigned].push(story.id);
                 }
               });
 
-              active.devQueues = { '1': dev1Queue, '2': dev2Queue };
-              active.qaQueues = { '3': qaQueue };
+              active.devQueues = devQueues;
+              active.qaQueues = qaQueues;
 
-              setSprints(parsedSprints);
+              // Guardar estado consolidado
+              setSprints(prev => ({
+                ...(prev || {}),
+                ...parsedSprints
+              }));
+              
               setActiveSprintId(activeId);
-              addLog(`¡Base de Datos de '${originName}' parseada correctamente de 4 vías!`);
+              addLog(`¡Base de Datos de '${originName}' parseada correctamente de 4 vías con vinculación de recursos!`);
               showFeedback(`Se cargó exitosamente el escenario de ${activeId}`, 'success');
 
             } catch (err) {
@@ -649,7 +871,6 @@
               return excelVal.toISOString().split('T')[0];
             }
             if (typeof excelVal === 'number') {
-              // Convertir fecha serializada de Excel a ISO
               const date = new Date(Date.UTC(0, 0, excelVal - 1));
               return date.toISOString().split('T')[0];
             }
@@ -694,7 +915,6 @@
             }
           };
 
-          // Sobrescribe directamente el archivo local vinculado sin descargar duplicados
           const handleDirectSyncSave = async () => {
             if (!fileHandle) {
               showFeedback("No hay ningún archivo de SharePoint vinculado. Descargue manualmente.", "error");
@@ -717,7 +937,6 @@
             }
           };
 
-          // --- FLUJO ALTERNATIVO DE DESCARGA ---
           const handleDownloadBackup = () => {
             try {
               const blob = generateExcelBlob();
@@ -739,7 +958,6 @@
 
           const generateExcelBlob = () => {
             const wb = XLSX.utils.book_new();
-            const sprintTag = activeSprintId.replace(/\s+/g, '_');
 
             // 1. Capacidad-Balance
             const capData = resourceMetrics.map(r => ({
@@ -754,7 +972,6 @@
             }));
             const wsCap = XLSX.utils.json_to_sheet(capData);
             
-            // Inyectar metadatos en las filas inferiores de Capacidad-Balance
             const paramsMeta = [
               [],
               ["Disponibilidad QA-Hrs", 4],
@@ -853,18 +1070,137 @@
             showFeedback(`Cambiado al ${sprintId} correctamente`, 'success');
           };
 
-          const createNewSprint = () => {
+          const handleOpenCreateSprintModal = () => {
             const nextSprintNum = parseInt(activeSprintId.replace('Sprint ', '')) + 1;
-            const newSprintName = `Sprint ${nextSprintNum}`;
+            const nextSprintName = isNaN(nextSprintNum) ? `${activeSprintId} Nuevo` : `Sprint ${nextSprintNum}`;
+            
+            const proposedStart = getNextBusinessDayColombia(activeSprint.end);
+            
+            const startDateObj = new Date(proposedStart + 'T00:00:00');
+            startDateObj.setDate(startDateObj.getDate() + 16);
+            const proposedEnd = startDateObj.toISOString().split('T')[0];
+
+            const colHolidays = getColombianHolidaysForRange(proposedStart, proposedEnd);
+            const holidaysWithChecked = colHolidays.map(h => ({
+              ...h,
+              checked: true
+            }));
+
+            setCreateSprintConfig({
+              id: nextSprintName,
+              start: proposedStart,
+              end: proposedEnd,
+              detectedHolidays: holidaysWithChecked
+            });
+            setIsCreateModalOpen(true);
+          };
+
+          const handleCreateConfigChange = (field, val) => {
+            setCreateSprintConfig(prev => {
+              const updated = { ...prev, [field]: val };
+              if (field === 'start' || field === 'end') {
+                const colHolidays = getColombianHolidaysForRange(updated.start, updated.end);
+                updated.detectedHolidays = colHolidays.map(h => ({
+                  ...h,
+                  checked: true
+                }));
+              }
+              return updated;
+            });
+          };
+
+          const toggleCreateHolidayChecked = (holidayDate) => {
+            setCreateSprintConfig(prev => {
+              const updatedHolidays = prev.detectedHolidays.map(h => {
+                if (h.date === holidayDate) {
+                  return { ...h, checked: !h.checked };
+                }
+                return h;
+              });
+              return { ...prev, detectedHolidays: updatedHolidays };
+            });
+          };
+
+          const confirmAndCreateSprint = () => {
+            const cleanId = createSprintConfig.id.trim();
+            if (!cleanId) {
+              showFeedback("El identificador del Sprint no puede estar vacío", "error");
+              return;
+            }
+            if (sprints[cleanId]) {
+              showFeedback(`Ya existe un Sprint con el identificador "${cleanId}"`, "error");
+              return;
+            }
+
+            const finalHolidays = createSprintConfig.detectedHolidays
+              .filter(h => h.checked)
+              .map(h => h.date);
+
             const inheritedResources = activeSprint.resources.map(r => ({ ...r, exceptionStart: '' }));
 
-            const nextSprintData = {
-              id: newSprintName, start: '2026-08-17', end: '2026-09-02', holidays: [], resources: inheritedResources, userStories: [], devQueues: {}, qaQueues: {}, dodList: [...activeSprint.dodList]
+            const newSprintData = {
+              id: cleanId,
+              start: createSprintConfig.start,
+              end: createSprintConfig.end,
+              holidays: finalHolidays,
+              resources: inheritedResources,
+              userStories: [],
+              devQueues: {},
+              qaQueues: {},
+              dodList: [...activeSprint.dodList]
             };
 
-            setSprints(prev => ({ ...prev, [newSprintName]: nextSprintData }));
-            setActiveSprintId(newSprintName);
-            showFeedback(`¡Se ha creado el ${newSprintName} con éxito!`, 'success');
+            setSprints(prev => ({
+              ...(prev || {}),
+              [cleanId]: newSprintData
+            }));
+            setActiveSprintId(cleanId);
+            setIsCreateModalOpen(false);
+            showFeedback(`¡${cleanId} creado y configurado con éxito por el PO!`, 'success');
+            addLog(`Sprint "${cleanId}" creado. Festivos oficiales de Colombia inyectados: ${finalHolidays.length}`);
+          };
+
+          const handleRenameSprint = () => {
+            const cleanNewId = sprintRenameInput.trim();
+            if (!cleanNewId) {
+              showFeedback("El identificador del Sprint no puede estar vacío", "error");
+              return;
+            }
+            if (cleanNewId === activeSprintId) return;
+            if (sprints[cleanNewId]) {
+              showFeedback(`Ya existe un Sprint bajo el identificador "${cleanNewId}"`, "error");
+              return;
+            }
+
+            setSprints(prev => {
+              const copy = { ...prev };
+              const sprintData = { ...copy[activeSprintId], id: cleanNewId };
+              delete copy[activeSprintId];
+              copy[cleanNewId] = sprintData;
+              return copy;
+            });
+            setActiveSprintId(cleanNewId);
+            showFeedback(`Sprint renombrado a "${cleanNewId}"`, "success");
+            addLog(`Sprint renombrado de "${activeSprintId}" a "${cleanNewId}"`);
+          };
+
+          const handleLoadColombianHolidays = () => {
+            const colHolidays = getColombianHolidaysForRange(activeSprint.start, activeSprint.end);
+            if (colHolidays.length === 0) {
+              showFeedback("No se detectaron festivos colombianos en este rango de fechas", "error");
+              return;
+            }
+
+            setSprints(prev => {
+              const s = { ...prev[activeSprintId] };
+              const currentHolidays = s.holidays || [];
+              const merged = [...new Set([...currentHolidays, ...colHolidays.map(h => h.date)])].sort();
+              s.holidays = merged;
+              return { ...prev, [activeSprintId]: s };
+            });
+
+            showFeedback(`¡Se detectaron e inyectaron ${colHolidays.length} festivos oficiales de Colombia!`, 'success');
+            addLog(`Gobernanza Festivos Colombia activa. Festivos cargados: ${colHolidays.map(h => h.name).join(', ')}`);
           };
 
           const sendToBacklog = (story) => {
@@ -1056,6 +1392,30 @@
             });
           };
 
+          // --- CÁLCULO DE DÍAS HÁBILES PREVISTOS EN MODAL DE NUEVO SPRINT ---
+          const previewWorkingDaysCount = useMemo(() => {
+            let start = new Date(createSprintConfig.start + 'T00:00:00');
+            let end = new Date(createSprintConfig.end + 'T00:00:00');
+            if (isNaN(start) || isNaN(end) || start > end) return 0;
+            
+            const checkedHolidays = createSprintConfig.detectedHolidays
+              .filter(h => h.checked)
+              .map(h => h.date);
+
+            let count = 0;
+            let current = new Date(start);
+            while (current <= end) {
+              const day = current.getUTCDay();
+              const isWeekend = day === 0 || day === 6;
+              const currentISO = current.toISOString().split('T')[0];
+              const isHoliday = checkedHolidays.includes(currentISO);
+              
+              if (!isWeekend && !isHoliday) count++;
+              current.setDate(current.getDate() + 1);
+            }
+            return count;
+          }, [createSprintConfig]);
+
           // --- VISTA DE BIENVENIDA / INGESTA ---
           if (!sprints) {
             return (
@@ -1141,7 +1501,7 @@
           return (
             <div className="min-h-screen bg-slate-50 text-slate-800 font-sans antialiased pb-12">
               {feedbackMessage && (
-                <div className={`fixed top-4 right-4 z-50 flex items-center gap-3 px-5 py-3 rounded-xl shadow-lg border transition-all duration-300 animate-bounce ${feedbackType === 'success' ? 'bg-emerald-500 text-white border-emerald-400' : 'bg-rose-500 text-white border-rose-400'}`}>
+                <div className={`fixed top-4 right-4 z-50 flex items-center gap-3 px-5 py-3 rounded-xl shadow-lg border transition-all duration-300 ${feedbackType === 'success' ? 'bg-emerald-500 text-white border-emerald-400' : 'bg-rose-500 text-white border-rose-400'}`}>
                   <Icons.Check />
                   <span className="font-medium text-sm">{feedbackMessage}</span>
                 </div>
@@ -1203,7 +1563,7 @@
                         <div className="font-bold text-white text-center text-sm">{sprintWorkingDays} d</div>
                       </div>
                     </div>
-                    <button onClick={createNewSprint} className="px-3.5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1 shadow-lg shadow-blue-500/10">
+                    <button onClick={handleOpenCreateSprintModal} className="px-3.5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1 shadow-lg shadow-blue-500/10">
                       <Icons.Plus /> Nuevo Sprint
                     </button>
                   </div>
@@ -1276,7 +1636,7 @@
                     <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-6">
                       <div>
                         <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2 text-emerald-700"><Icons.CloudSync /> Conexión Directa a OneDrive / SharePoint</h3>
-                        <p className="text-sm text-slate-500 mt-1">Sincronice o vincule un nuevo archivo de planificación directamente desde su PC corporativa.</p>
+                        <p className="text-sm text-slate-500 mt-1">Sincronice o vincule un nuevo archivo de planificación directamente desde su PC corporativa de forma simultánea.</p>
                       </div>
 
                       <div className="border-2 border-dashed border-slate-300 rounded-2xl p-8 hover:bg-slate-50 transition cursor-pointer flex flex-col items-center justify-center text-center relative">
@@ -1292,7 +1652,7 @@
                         }} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
                         <div className="bg-emerald-50 text-emerald-600 p-4 rounded-full mb-3"><Icons.CloudSync /></div>
                         <h4 className="font-bold text-slate-800 text-sm">Arrastre y suelte su archivo Excel corporativo aquí</h4>
-                        <p className="text-xs text-slate-400 mt-1 max-w-sm">Carga inmediata de las tablas del sprint actual.</p>
+                        <p className="text-xs text-slate-400 mt-1 max-w-sm">Carga inmediata de las tablas de un nuevo Sprint conservando los anteriores.</p>
                         <span className="mt-3 px-3 py-1 bg-slate-100 hover:bg-slate-200 text-[11px] font-bold text-slate-700 rounded-lg transition">Seleccionar desde Archivos</span>
                       </div>
 
@@ -1322,7 +1682,7 @@
                     <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                       <div>
                         <h3 className="font-bold text-slate-900 text-lg">Control de Historias e Integración de Criterios DoD</h3>
-                        <p className="text-xs text-slate-500 font-medium">Supervise el estado, avance del Definition of Done y justificación de retrasos</p>
+                        <p className="text-xs text-slate-500 font-medium animate-pulse text-blue-600">Para visualizar historias en las Cascadas de abajo, asigne un Desarrollador o un Asegurador QA válido</p>
                       </div>
                       <button onClick={handleOpenAddModal} className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 shadow-lg rounded-xl transition flex items-center gap-1.5"><Icons.Plus /> Agregar HU</button>
                     </div>
@@ -1347,8 +1707,10 @@
                                 <td className="px-6 py-4 font-bold text-slate-950">#{hu.id}</td>
                                 <td className="px-6 py-4 max-w-xs md:max-w-md">
                                   <span className="font-semibold text-slate-800 block truncate">{hu.name}</span>
-                                  <div className="flex gap-2 mt-1">
+                                  <div className="flex flex-wrap gap-2 mt-1">
                                     <span className="text-[10px] px-1.5 py-0.2 font-medium bg-slate-100 text-slate-600 rounded">{hu.points} SP</span>
+                                    {hu.hasDev && <span className="text-[10px] px-1.5 py-0.2 font-bold bg-blue-50 text-blue-700 rounded border border-blue-100">DEV: {activeSprint.resources.find(r => r.id === hu.devAssigned)?.name || 'Sin Asignar'}</span>}
+                                    {hu.hasQa && <span className="text-[10px] px-1.5 py-0.2 font-bold bg-purple-50 text-purple-700 rounded border border-purple-100">QA: {activeSprint.resources.find(r => r.id === hu.qaAssigned)?.name || 'Sin Asignar'}</span>}
                                     {hu.delayCategory && <span className="text-[10px] px-1.5 py-0.2 font-bold bg-rose-50 text-rose-700 rounded border border-rose-100 flex items-center gap-1">⚠️ Retraso: {hu.delayCategory}</span>}
                                   </div>
                                   {hu.delayReason && <p className="text-[11px] text-slate-500 italic mt-1 line-clamp-1">" {hu.delayReason} "</p>}
@@ -1428,7 +1790,7 @@
                               </thead>
                               <tbody className="divide-y divide-slate-100">
                                 {assignedStories.length === 0 ? (
-                                  <tr><td colSpan="11" className="px-6 py-8 text-center text-slate-400">No hay historias asignadas.</td></tr>
+                                  <tr><td colSpan="11" className="px-6 py-8 text-center text-slate-400">No hay historias asignadas para {resource.name} en este Sprint.</td></tr>
                                 ) : (
                                   assignedStories.map((hu, idx) => (
                                     <tr key={hu.id}>
@@ -1492,7 +1854,7 @@
                               </thead>
                               <tbody className="divide-y divide-slate-100">
                                 {assignedStories.length === 0 ? (
-                                  <tr><td colSpan="11" className="px-6 py-8 text-center text-slate-400">No hay historias asignadas.</td></tr>
+                                  <tr><td colSpan="11" className="px-6 py-8 text-center text-slate-400">No hay historias asignadas para {resource.name} en este Sprint. Verifique en el consolidador si las HUs tienen asignado un QA válido.</td></tr>
                                 ) : (
                                   assignedStories.map((hu, idx) => (
                                     <tr key={hu.id}>
@@ -1565,14 +1927,30 @@
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-6">
                       <div>
-                        <h4 className="font-bold text-slate-900 text-base flex items-center gap-2"><Icons.Calendar /> Fechas del Sprint</h4>
-                        <p className="text-xs text-slate-500">Límites activos procesados de su archivo Excel</p>
+                        <h4 className="font-bold text-slate-900 text-base flex items-center gap-2"><Icons.Calendar /> Configuración del Sprint</h4>
+                        <p className="text-xs text-slate-500 font-medium font-semibold text-emerald-700">Renombre el Sprint o configure su ciclo de vida activo</p>
                       </div>
                       <div className="space-y-4">
+                        {/* --- ENTRADA EDICIÓN SPRINT ID --- */}
                         <div>
-                          <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">ID Sprint</label>
-                          <input type="text" value={activeSprintId} disabled className="w-full bg-slate-100 border border-slate-200 rounded-xl px-3.5 py-2 text-sm text-slate-500 cursor-not-allowed font-semibold" />
+                          <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Identificador del Sprint</label>
+                          <div className="flex gap-2">
+                            <input 
+                              type="text" 
+                              value={sprintRenameInput} 
+                              onChange={(e) => setSprintRenameInput(e.target.value)} 
+                              className="flex-1 border border-slate-200 rounded-xl px-3.5 py-2 text-sm font-bold text-slate-850 focus:ring-2 focus:ring-blue-500/20" 
+                            />
+                            <button 
+                              type="button" 
+                              onClick={handleRenameSprint}
+                              className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl transition shadow"
+                            >
+                              Renombrar
+                            </button>
+                          </div>
                         </div>
+
                         <div className="grid grid-cols-2 gap-4">
                           <div>
                             <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Inicio</label>
@@ -1590,6 +1968,37 @@
                           </div>
                           <span className="text-2xl font-black text-blue-600 bg-blue-50 border border-blue-100 px-3.5 py-1.5 rounded-xl">{sprintWorkingDays}</span>
                         </div>
+
+                        {/* --- ACCIÓN DE ELIMINACIÓN DE SPRINT --- */}
+                        {Object.keys(sprints).length > 1 && (
+                          <div className="pt-4 border-t border-slate-100">
+                            <button
+                              onClick={() => {
+                                setConfirmState({
+                                  isOpen: true,
+                                  title: 'Eliminar Sprint Completo',
+                                  message: `¿Está seguro de que desea eliminar el "${activeSprintId}" completo de la base de datos? Esta acción es irreversible.`,
+                                  onConfirm: () => {
+                                    setSprints(prev => {
+                                      const copy = { ...prev };
+                                      delete copy[activeSprintId];
+                                      return copy;
+                                    });
+                                    const remaining = Object.keys(sprints).filter(id => id !== activeSprintId);
+                                    setActiveSprintId(remaining[0]);
+                                    showFeedback(`Se eliminó el Sprint de la memoria activa`, "success");
+                                    addLog(`Sprint "${activeSprintId}" purgado de la base de datos.`);
+                                    setConfirmState(prev => ({ ...prev, isOpen: false }));
+                                  }
+                                });
+                              }}
+                              type="button"
+                              className="w-full py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5"
+                            >
+                              <Icons.Trash /> Eliminar Sprint Activo
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -1635,6 +2044,24 @@
                         <p className="text-xs text-slate-500 font-medium">No hábiles omitidos en el cronograma</p>
                       </div>
                       <div className="space-y-4">
+                        {/* --- COMPONENTE INTEGRADO DE ESCANEO DE FESTIVOS DE COLOMBIA --- */}
+                        <div className="bg-emerald-50/50 border border-emerald-100 rounded-xl p-4 space-y-3">
+                          <div className="text-xs text-emerald-800 font-semibold flex items-center gap-1.5">
+                            <span className="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
+                            Festivos Oficiales de Colombia (Ley Emiliani)
+                          </div>
+                          <p className="text-[11px] text-emerald-700 leading-relaxed">
+                            Escanee e inyecte automáticamente todos los festivos nacionales colombianos contenidos en el rango del sprint actual.
+                          </p>
+                          <button
+                            type="button"
+                            onClick={handleLoadColombianHolidays}
+                            className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg transition shadow-md shadow-emerald-600/10"
+                          >
+                            Autocompletar Festivos Colombia
+                          </button>
+                        </div>
+
                         <div className="flex gap-2">
                           <input type="date" value={newHoliday} onChange={(e) => setNewHoliday(e.target.value)} className="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none" />
                           <button onClick={() => {
@@ -1666,7 +2093,115 @@
                 )}
               </main>
 
-              {/* MODAL: CREACIÓN / EDICIÓN */}
+              {/* MODAL: CONFIGURAR Y CREAR NUEVO SPRINT (AUDITORÍA PO + FESTIVOS COLOMBIA) */}
+              {isCreateModalOpen && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                  <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 max-w-xl w-full max-h-[90vh] overflow-hidden flex flex-col animate-fade-in">
+                    
+                    <div className="p-6 border-b border-slate-100 bg-slate-900 text-white flex justify-between items-center">
+                      <div>
+                        <h3 className="font-extrabold text-lg tracking-tight flex items-center gap-2">
+                          <Icons.Calendar /> Confirmar y Crear Nuevo Sprint
+                        </h3>
+                        <p className="text-slate-400 text-xs mt-1">Definición de rango de fechas y verificación de días hábiles</p>
+                      </div>
+                      <button onClick={() => setIsCreateModalOpen(false)} className="text-slate-400 hover:text-white transition bg-slate-800 rounded-full p-2 text-xs">✕</button>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Identificador del Sprint</label>
+                          <input 
+                            type="text" 
+                            value={createSprintConfig.id} 
+                            onChange={(e) => handleCreateConfigChange('id', e.target.value)}
+                            className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-800 focus:ring-2 focus:ring-blue-500/20"
+                            placeholder="Ej: Sprint 60"
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Fecha de Inicio (Sugerida)</label>
+                            <input 
+                              type="date" 
+                              value={createSprintConfig.start} 
+                              onChange={(e) => handleCreateConfigChange('start', e.target.value)}
+                              className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/20 text-slate-700 font-medium"
+                            />
+                            <p className="text-[10px] text-slate-400 mt-1">Calculado sobre el primer día hábil posterior al cierre del anterior.</p>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Fecha de Cierre (Sugerida)</label>
+                            <input 
+                              type="date" 
+                              value={createSprintConfig.end} 
+                              onChange={(e) => handleCreateConfigChange('end', e.target.value)}
+                              className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/20 text-slate-700 font-medium"
+                            />
+                            <p className="text-[10px] text-slate-400 mt-1">Ciclo estándar de 16 días calendario sugerido por la app.</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* VALIDACIÓN AUTOMÁTICA DE FESTIVOS COLOMBIANOS */}
+                      <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-3">
+                        <div className="flex justify-between items-center border-b border-slate-200/60 pb-2">
+                          <h4 className="text-xs font-extrabold uppercase text-slate-600 tracking-wide flex items-center gap-1.5">
+                            <span className="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                            Festivos de Colombia detectados ({createSprintConfig.detectedHolidays.length})
+                          </h4>
+                          <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-md">Ley Emiliani</span>
+                        </div>
+
+                        {createSprintConfig.detectedHolidays.length === 0 ? (
+                          <p className="text-xs text-slate-400 italic py-2">No se detectaron festivos nacionales colombianos en este rango de fechas.</p>
+                        ) : (
+                          <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+                            {createSprintConfig.detectedHolidays.map((h) => (
+                              <label key={h.date} className="flex items-center justify-between p-2.5 bg-white border border-slate-200 rounded-xl hover:bg-slate-100 transition cursor-pointer">
+                                <div className="flex items-center gap-2.5">
+                                  <input 
+                                    type="checkbox" 
+                                    checked={h.checked} 
+                                    onChange={() => toggleCreateHolidayChecked(h.date)}
+                                    className="rounded text-emerald-600 h-4.5 w-4.5 focus:ring-emerald-500/30"
+                                  />
+                                  <div className="text-xs">
+                                    <span className="font-bold text-slate-800">{h.name}</span>
+                                    <span className="text-[10px] text-slate-400 block mt-0.5">{formatFriendlyDate(h.date)}</span>
+                                  </div>
+                                </div>
+                                <span className="text-[9px] font-black text-emerald-700 bg-emerald-50 px-2 py-1 rounded-md">Festivo Oficial</span>
+                              </label>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* PREVISUALIZACIÓN DE DÍAS HÁBILES */}
+                      <div className="bg-blue-50/50 border border-blue-100 rounded-2xl p-4 flex justify-between items-center">
+                        <div>
+                          <div className="text-xs font-bold text-blue-800">Días Hábiles del Periodo Sugerido</div>
+                          <p className="text-[10px] text-blue-600 mt-0.5">Excluyendo fines de semana y festivos confirmados.</p>
+                        </div>
+                        <span className="text-3xl font-black text-blue-700 bg-blue-100 border border-blue-200 px-4 py-2 rounded-2xl">
+                          {createSprintConfig.start && createSprintConfig.end ? previewWorkingDaysCount : 0} d
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="p-6 border-t border-slate-100 flex justify-end gap-3 bg-slate-50">
+                      <button type="button" onClick={() => setIsCreateModalOpen(false)} className="px-5 py-2.5 border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 font-semibold text-sm rounded-xl transition">Cancelar</button>
+                      <button type="button" onClick={confirmAndCreateSprint} className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl shadow-lg transition flex items-center gap-1.5"><Icons.Check /> Confirmar y Crear</button>
+                    </div>
+
+                  </div>
+                </div>
+              )}
+
+              {/* MODAL: CREACIÓN / EDICIÓN HU */}
               {isModalOpen && (
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                   <div className="bg-white rounded-2xl shadow-2xl border border-slate-100 max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
